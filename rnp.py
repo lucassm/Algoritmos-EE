@@ -102,9 +102,29 @@ class Arvore(object):
         else:
             return prof, indice
 
-    def caminho_no_para_raiz(self, no):
-        pass
+    def caminho_no_para_raiz(self, no, sentido=1):
+        assert isinstance(no, int), 'O parâmetro nó deve ser do tipo inteiro'
+        assert sentido == 1 or sentido == 0, 'O parâmetro sentido deve ser um inteiro de valor 1 ou 0'
 
+        if self.rnp.sum():
+            caminho, indice = self._busca_prof(no, retorna_array=True)
+            prof = caminho[0][0]
+            for i in range(indice, -1, -1):
+                print self.rnp[1, i]
+                prox = self.rnp[:, i]
+                prox = reshape(prox, (2, 1))
+                if prox[0, 0] < prof:
+                    prof -= 1
+                    caminho = concatenate((caminho, prox), axis=1)
+            if sentido == 1:
+                return caminho
+            else:
+                return caminho[:, range(size(caminho, axis=1)-1, -1, -1)]
+        else:
+            raise ValueError('A árvore ainda não possui uma estrutura RNP!')
+
+    def caminho_no_para_no(self, n1, n2):
+        pass
 
 class Floresta(object):
     """
@@ -137,3 +157,4 @@ if __name__ == '__main__':
     print arv_1.rnp
     #print arv_1.rnp_dic()
     print arv_1.podar(4)
+    print arv_1.caminho_no_para_raiz(12, sentido=1)
