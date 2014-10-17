@@ -4,7 +4,7 @@ módulo de representação nó profundidade
 """
 
 from collections import OrderedDict
-from numpy import array
+from numpy import array, size, reshape, where, concatenate, mat, shape
 
 
 class No(object):
@@ -41,25 +41,23 @@ class Arvore(object):
         assert isinstance(arvore, dict)
         self.arvore = arvore
         self.raiz = None
-        self.rnp = OrderedDict()
+        self.rnp = array(mat('0; 0'))
         self._arvore = None
 
     def ordena(self, raiz):
-        self.rnp[raiz] = 0
+        self.rnp[1][0] = raiz
         visitados = []
         pilha = []
         self._proc(raiz, visitados, pilha)
 
     def _proc(self, no, visitados, pilha):
-        print 'No visitado %2s' % no
         visitados.append(no)
         pilha.append(no)
         visinhos = self.arvore[no]
-        prox = None
         for i in visinhos:
             if i not in visitados:
                 prox = i
-                self.rnp[i] = len(pilha)
+                self.rnp = concatenate((self.rnp, [[len(pilha)], [i]]), axis=1)
                 break
         else:
             pilha.pop()
@@ -70,12 +68,42 @@ class Arvore(object):
                 return
         return self._proc(prox, visitados, pilha)
 
+    def rnp_dic(self):
+        rnp = OrderedDict()
+        for i in self.rnp.transpose():
+            rnp[i[1]] = i[0]
+        return rnp
+
     def podar(self, no):
         assert isinstance(no, int)
-        if self.rnp:
-
+        if self.rnp.sum():
+            poda, indice = self._busca_prof(no, retorna_array=True)
+            prof = poda[0][0]
+            for i in range(indice+1, size(self.rnp, axis=1)):
+                prox = self.rnp[:, i]
+                prox = reshape(prox, (2, 1))
+                if prox[0][0] > prof:
+                    poda = concatenate((poda, prox), axis=1)
+                else:
+                    break
+            return poda
         else:
-            print 'A arvore ainda não possui uma estrutura RNP'
+            raise ValueError('A árvore ainda não possui uma estrutura RNP!')
+
+    def _busca_prof(self, no, retorna_array=False):
+        try:
+            indice = where(self.rnp[1, :] == no)[0][0]
+            prof = int(self.rnp[0][indice])
+        except IndexError:
+            raise IndexError('O nó especificado não existe na árvore!')
+
+        if retorna_array:
+            return array([[prof], [no]]), indice
+        else:
+            return prof, indice
+
+    def caminho_no_para_raiz(self, no):
+        pass
 
 
 class Floresta(object):
@@ -105,5 +133,7 @@ if __name__ == '__main__':
            13: [12]}
 
     arv_1 = Arvore(nos)
-    arv_1.ordena(3)
+    arv_1.ordena(raiz=3)
     print arv_1.rnp
+    #print arv_1.rnp_dic()
+    print arv_1.podar(4)
