@@ -4,7 +4,7 @@ módulo de representação nó profundidade
 """
 
 from collections import OrderedDict
-from numpy import array, size, reshape, where, concatenate, mat, shape
+from numpy import array, size, reshape, where, concatenate, mat
 
 
 class No(object):
@@ -14,10 +14,10 @@ class No(object):
     documentacao classe No
     """
     def __init__(self, nome, vizinhos=list()):
-        assert isinstance(nome, int)
+        assert isinstance(nome, str)
         self.nome = nome
         assert isinstance(vizinhos, list)
-        self.visinhos = vizinhos
+        self.vizinhos = vizinhos
 
 
 class Aresta(object):
@@ -26,9 +26,13 @@ class Aresta(object):
     -------------
     documentacao classe Aresta
     """
-    def __init__(self, n1, n2):
-        self.n1 = n1
-        self.n2 = n2
+
+    n1 = None
+    n2 = None
+
+    def __init__(self, nome):
+        assert isinstance(nome, str), 'O parâmetro nome da classe Aresta deve ser do tipo string'
+        self.nome = nome
 
 
 class Arvore(object):
@@ -37,14 +41,19 @@ class Arvore(object):
     -------------
     documentacao classe Arvore
     """
-    def __init__(self, arvore):
+    def __init__(self, arvore, dtype=int):
         assert isinstance(arvore, dict)
         self.arvore = arvore
         self.raiz = None
-        self.rnp = array(mat('0; 0'))
+        self.dtype = dtype
+        if issubclass(dtype, int):
+            self.rnp = array(mat('0; 0'), dtype=int)
+        else:
+            self.rnp = array(mat('0; 0'), dtype=str)
         self._arvore = None
 
     def ordena(self, raiz):
+        assert isinstance(raiz, self.dtype), 'Erro no tipo do parâmetro raiz!'
         self.rnp[1][0] = raiz
         visitados = []
         pilha = []
@@ -57,7 +66,10 @@ class Arvore(object):
         for i in visinhos:
             if i not in visitados:
                 prox = i
-                self.rnp = concatenate((self.rnp, [[len(pilha)], [i]]), axis=1)
+                if issubclass(self.dtype, str):
+                    self.rnp = concatenate((self.rnp, [[str(len(pilha))], [i]]), axis=1)
+                else:
+                    self.rnp = concatenate((self.rnp, [[len(pilha)], [i]]), axis=1)
                 break
         else:
             pilha.pop()
@@ -148,6 +160,7 @@ class Arvore(object):
         else:
             raise ValueError('A árvore ainda não possui uma estrutura RNP!')
 
+
 class Floresta(object):
     """
     Classe Floresta
@@ -179,5 +192,5 @@ if __name__ == '__main__':
     print arv_1.rnp
     #print arv_1.rnp_dic()
     #print arv_1.podar(4)
-    #print arv_1.caminho_no_para_raiz(12, sentido=1)
-    print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
+    print arv_1.caminho_no_para_raiz(no=12, sentido=1)
+    #print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
