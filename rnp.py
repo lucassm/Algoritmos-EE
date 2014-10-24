@@ -4,7 +4,7 @@ módulo de representação nó profundidade
 """
 
 from collections import OrderedDict
-from numpy import array, size, reshape, where, concatenate, mat
+from numpy import array, size, reshape, where, concatenate, mat, delete, ndarray, insert
 
 
 class No(object):
@@ -13,6 +13,7 @@ class No(object):
     ---------
     documentacao classe No
     """
+
     def __init__(self, nome, vizinhos=list()):
         assert isinstance(nome, str)
         self.nome = nome
@@ -41,6 +42,7 @@ class Arvore(object):
     -------------
     documentacao classe Arvore
     """
+
     def __init__(self, arvore, dtype=int):
         assert isinstance(arvore, dict)
         self.arvore = arvore
@@ -91,16 +93,38 @@ class Arvore(object):
         if self.rnp.sum():
             poda, indice = self._busca_prof(no, retorna_array=True)
             prof = poda[0][0]
-            for i in range(indice+1, size(self.rnp, axis=1)):
+            indices_poda = list([indice])
+            for i in range(indice + 1, size(self.rnp, axis=1)):
                 prox = self.rnp[:, i]
                 prox = reshape(prox, (2, 1))
                 if prox[0][0] > prof:
                     poda = concatenate((poda, prox), axis=1)
+                    indices_poda.append(i)
                 else:
                     break
+            self.rnp = delete(self.rnp, indices_poda, axis=1)
             return poda
         else:
             raise ValueError('A árvore ainda não possui uma estrutura RNP!')
+
+    def inserir_ramo(self, no, ramo):
+        if issubclass(self.dtype, int):
+            assert isinstance(no, int), 'O parâmetro no deve ser do tipo int'
+        else:
+            assert isinstance(no, str), 'O parâmetro no deve ser do tipo str'
+        assert isinstance(ramo, ndarray), 'O parâmetro ramo deve ser do tipo ndarray'
+
+        prof_raiz, indice = self._busca_prof(no)
+        prof_raiz_ramo = ramo[0, 0]
+
+        for i in range(size(ramo, axis=1)):
+            prof_no = ramo[0, i]
+            nova_prof = int(prof_no) - int(prof_raiz_ramo) + int(prof_raiz) + 1
+
+            if issubclass(self.dtype, str):
+                ramo[0][i] = str(nova_prof)
+
+        self.rnp = insert(self.rnp, [indice+1], ramo, axis=1)
 
     def _busca_prof(self, no, retorna_array=False):
         try:
@@ -130,7 +154,7 @@ class Arvore(object):
             if sentido == 1:
                 return caminho
             else:
-                return caminho[:, range(size(caminho, axis=1)-1, -1, -1)]
+                return caminho[:, range(size(caminho, axis=1) - 1, -1, -1)]
         else:
             raise ValueError('A árvore ainda não possui uma estrutura RNP!')
 
@@ -156,7 +180,7 @@ class Arvore(object):
             if sentido == 1:
                 return caminho
             else:
-                return caminho[:, range(size(caminho, axis=1)-1, -1, -1)]
+                return caminho[:, range(size(caminho, axis=1) - 1, -1, -1)]
         else:
             raise ValueError('A árvore ainda não possui uma estrutura RNP!')
 
@@ -167,30 +191,47 @@ class Floresta(object):
     ---------------
     documentacao classe Floresta
     """
+
     def __init__(self, floresta):
         assert isinstance(floresta, list)
         pass
 
+
 if __name__ == '__main__':
     # arvore 1
-    nos = {3: [1],
-           1: [3, 2, 7],
-           7: [1, 8, 9, 4, 10],
-           10: [7],
-           4: [7, 5, 6],
-           5: [4],
-           6: [4],
-           9: [7],
-           8: [7],
-           2: [1, 11, 12, 13],
-           11: [2],
-           12: [2, 13],
-           13: [12]}
+    nos1 = {3: [1],
+            1: [3, 2, 7],
+            7: [1, 8, 9, 4, 10],
+            10: [7],
+            4: [7, 5, 6],
+            5: [4],
+            6: [4],
+            9: [7],
+            8: [7],
+            2: [1, 11, 12, 13],
+            11: [2],
+            12: [2, 13],
+            13: [12]}
 
-    arv_1 = Arvore(nos)
+    # arvore 2
+    nos2 = {14: [15],
+            15: [14, 16, 19],
+            16: [15, 17, 18],
+            17: [16],
+            18: [16],
+            19: [15]}
+
+    arv_1 = Arvore(nos1)
     arv_1.ordena(raiz=3)
     print arv_1.rnp
-    #print arv_1.rnp_dic()
-    #print arv_1.podar(4)
-    print arv_1.caminho_no_para_raiz(no=12, sentido=1)
-    #print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
+    # print arv_1.rnp_dic()
+    ram = arv_1.podar(5)
+    print ram
+    arv_1.inserir_ramo(8, ram)
+    print arv_1.rnp
+    # print arv_1.caminho_no_para_raiz(no=12, sentido=1)
+    # print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
+
+    arv_2 = Arvore(nos2)
+    arv_2.ordena(raiz=14)
+    print arv_2.rnp

@@ -1,4 +1,5 @@
 # coding=utf-8
+from numpy import size, array, mat
 
 from rnp import Arvore, Aresta
 
@@ -23,7 +24,11 @@ class Setor(Arvore):
         arvore_do_setor = dict()
         for i, j in self.nos_de_carga.iteritems():
             print '%-12s vizinhos %s' % (str(j), j.vizinhos)
-            arvore_do_setor[i] = j.vizinhos
+            vizinhos = list()
+            for k in j.vizinhos:
+                if k in self.nos_de_carga.keys():
+                    vizinhos.append(k)
+            arvore_do_setor[i] = vizinhos
 
         return arvore_do_setor
 
@@ -51,6 +56,23 @@ class NoDeCarga(object):
 class Alimentador(Arvore):
     def __init__(self):
         pass
+
+
+class Trecho(Aresta):
+    def __init__(self, nome, n1, n2, chave=None):
+        assert isinstance(nome, str), 'O parâmetro nome da classe Trecho' \
+                                      'deve ser do tipo str'
+        assert isinstance(n1, NoDeCarga), 'O parâmetro nome da classe Trecho' \
+                                          'deve ser do tipo No de carga'
+        assert isinstance(n2, NoDeCarga), 'O parâmetro nome da classe Trecho' \
+                                          'deve ser do tipo No de carga'
+        assert isinstance(chave, Chave) or \
+               chave is None, 'O parâmetro nome da classe Trecho deve' \
+                              ' ser do tipo Chave'
+        super(Trecho, self).__init__(nome)
+        self.n1 = n1
+        self.n2 = n2
+        self.chave = chave
 
 
 class Subestacao(Arvore):
@@ -88,6 +110,32 @@ class Subestacao(Arvore):
 
         return arvore_da_rede
 
+    def _gera_trechos_da_rede(self):
+
+        rnp_nos_de_carga = array([])
+        setor_raiz = self.setores[self.rnp[1][0]]
+        print setor_raiz.arvore_do_setor
+        arvore_nos_de_carga = Arvore(arvore=setor_raiz.arvore_do_setor, dtype=str)
+        arvore_nos_de_carga.ordena(raiz=setor_raiz.rnp[1][0])
+        print arvore_nos_de_carga.rnp
+        setor = setor_raiz
+        for i in self.rnp[1, 1:]:  # for percorre os setores
+            nos_de_ligacao = list()
+            prox_setor = self.setores[i]
+            for k in setor.nos_de_carga.keys():  # for percorre os nos de carga do setor atual
+                # for verifica se existem nos de carga vizinhos aos
+                # nos de carga do setor atual no proximo setor
+                for w in prox_setor.nos_de_carga.values():
+                    #  print w.vizinhos
+                    if k in w.vizinhos:
+                        nos_de_ligacao.append(k)
+
+            for k in nos_de_ligacao:
+                arvore_nos_de_carga.inserir_ramo(no=k, ramo=prox_setor.rnp)
+                print arvore_nos_de_carga.rnp
+                # TODO: Encontrar o nó para inserir o ramo do novo setor
+                # arvore_nos_de_carga.inserir_ramo(no=, ramo=)
+
 
 class Chave(Aresta):
     def __init__(self, nome, estado=1):
@@ -120,24 +168,24 @@ if __name__ == '__main__':
     # nos de carga do setor A
     nos = dict()
     nos['A1'] = NoDeCarga(nome='A1', vizinhos=['A2'], potencia=160 + 120j)
-    nos['A2'] = NoDeCarga(nome='A2', vizinhos=['A1', 'A3'], potencia=150 + 110j)
-    nos['A3'] = NoDeCarga(nome='A3', vizinhos=['A2'], potencia=100 + 80j)
+    nos['A2'] = NoDeCarga(nome='A2', vizinhos=['A1', 'A3', 'C1'], potencia=150 + 110j)
+    nos['A3'] = NoDeCarga(nome='A3', vizinhos=['A2', 'B1'], potencia=100 + 80j)
 
     _setores_1['A'] = Setor(nome='A', vizinhos=['B', 'C'], nos_de_carga=nos)
 
     # nos de carga do Setor B
     nos = dict()
-    nos['B1'] = NoDeCarga(nome='B1', vizinhos=['B2'], potencia=200 + 140j)
-    nos['B2'] = NoDeCarga(nome='B2', vizinhos=['B1', 'B2'], potencia=150 + 110j)
-    nos['B3'] = NoDeCarga(nome='B3', vizinhos=['B2'], potencia=100 + 80j)
+    nos['B1'] = NoDeCarga(nome='B1', vizinhos=['B2', 'A3'], potencia=200 + 140j)
+    nos['B2'] = NoDeCarga(nome='B2', vizinhos=['B1', 'B3', 'E2'], potencia=150 + 110j)
+    nos['B3'] = NoDeCarga(nome='B3', vizinhos=['B2', 'C3'], potencia=100 + 80j)
 
     _setores_1['B'] = Setor(nome='B', vizinhos=['A'], nos_de_carga=nos)
 
     # nos de carga do Setor C
     nos = dict()
-    nos['C1'] = NoDeCarga(nome='C1', vizinhos=['C2', 'C3'], potencia=200 + 140j)
+    nos['C1'] = NoDeCarga(nome='C1', vizinhos=['C2', 'C3', 'A2'], potencia=200 + 140j)
     nos['C2'] = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
-    nos['C3'] = NoDeCarga(nome='C3', vizinhos=['C1'], potencia=100 + 80j)
+    nos['C3'] = NoDeCarga(nome='C3', vizinhos=['C1', 'B3', 'E3'], potencia=100 + 80j)
 
     _setores_1['C'] = Setor(nome='C', vizinhos=['A'], nos_de_carga=nos)
 
@@ -145,7 +193,7 @@ if __name__ == '__main__':
 
     # nos de carga do Setor D
     nos = dict()
-    nos['D1'] = NoDeCarga(nome='D1', vizinhos=['D2', 'D3'], potencia=200 + 160j)
+    nos['D1'] = NoDeCarga(nome='D1', vizinhos=['D2', 'D3', 'E1'], potencia=200 + 160j)
     nos['D2'] = NoDeCarga(nome='D2', vizinhos=['D1'], potencia=90 + 40j)
     nos['D3'] = NoDeCarga(nome='D3', vizinhos=['D1'], potencia=100 + 80j)
 
@@ -153,9 +201,9 @@ if __name__ == '__main__':
 
     # nos de carga do Setor E
     nos = dict()
-    nos['E1'] = NoDeCarga(nome='E1', vizinhos=['E3', 'E2'], potencia=100 + 40j)
-    nos['E2'] = NoDeCarga(nome='E2', vizinhos=['E1'], potencia=110 + 70j)
-    nos['E3'] = NoDeCarga(nome='E3', vizinhos=['E1'], potencia=150 + 80j)
+    nos['E1'] = NoDeCarga(nome='E1', vizinhos=['E3', 'E2', 'D1'], potencia=100 + 40j)
+    nos['E2'] = NoDeCarga(nome='E2', vizinhos=['E1', 'B2'], potencia=110 + 70j)
+    nos['E3'] = NoDeCarga(nome='E3', vizinhos=['E1', 'C3'], potencia=150 + 80j)
 
     _setores_2['E'] = Setor(nome='E', vizinhos=['D'], nos_de_carga=nos)
 
@@ -182,7 +230,7 @@ if __name__ == '__main__':
     _chaves['8'].n2 = _setores_2['E']
 
     sub1 = Subestacao(nome='SE1', setores=_setores_1, chaves=_chaves)
-    #sub2 = Subestacao(nome='SE2', setores=_setores_2, chaves=_chaves)
+    # sub2 = Subestacao(nome='SE2', setores=_setores_2, chaves=_chaves)
     print sub1.arvore_da_rede
 
     for i, j in sub1.setores.iteritems():
@@ -193,6 +241,11 @@ if __name__ == '__main__':
         elif i == 'C':
             j.ordena(raiz='C1')
             print j.rnp
+        elif i == 'B':
+            j.ordena(raiz='B1')
+            print j.rnp
 
     sub1.ordena(raiz='A')
     print sub1.rnp
+
+    sub1._gera_trechos_da_rede()
