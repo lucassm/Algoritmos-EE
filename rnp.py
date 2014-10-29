@@ -56,6 +56,7 @@ class Arvore(object):
 
     def ordena(self, raiz):
         assert isinstance(raiz, self.dtype), 'Erro no tipo do parâmetro raiz!'
+        self.raiz = raiz
         self.rnp[1][0] = raiz
         visitados = []
         pilha = []
@@ -64,7 +65,17 @@ class Arvore(object):
     def _proc(self, no, visitados, pilha):
         visitados.append(no)
         pilha.append(no)
-        visinhos = self.arvore[no]
+
+        try:
+            visinhos = self.arvore[no]
+        except KeyError:
+            pilha.pop()
+            if pilha:
+                anter = pilha.pop()
+                return self._proc(anter, visitados, pilha)
+            else:
+                return
+
         for i in visinhos:
             if i not in visitados:
                 prox = i
@@ -88,24 +99,25 @@ class Arvore(object):
             rnp[i[1]] = i[0]
         return rnp
 
-    def podar(self, no):
-        assert isinstance(no, int)
-        if self.rnp.sum():
-            poda, indice = self._busca_prof(no, retorna_array=True)
-            prof = poda[0][0]
-            indices_poda = list([indice])
-            for i in range(indice + 1, size(self.rnp, axis=1)):
-                prox = self.rnp[:, i]
-                prox = reshape(prox, (2, 1))
-                if prox[0][0] > prof:
-                    poda = concatenate((poda, prox), axis=1)
-                    indices_poda.append(i)
-                else:
-                    break
+    def podar(self, no, alterar_rnp=False):
+        #assert isinstance(no, int)
+        #if self.rnp.sum():
+        poda, indice = self._busca_prof(no, retorna_array=True)
+        prof = poda[0][0]
+        indices_poda = list([indice])
+        for i in range(indice + 1, size(self.rnp, axis=1)):
+            prox = self.rnp[:, i]
+            prox = reshape(prox, (2, 1))
+            if prox[0][0] > prof:
+                poda = concatenate((poda, prox), axis=1)
+                indices_poda.append(i)
+            else:
+                break
+        if alterar_rnp:
             self.rnp = delete(self.rnp, indices_poda, axis=1)
-            return poda
-        else:
-            raise ValueError('A árvore ainda não possui uma estrutura RNP!')
+        return poda
+        #else:
+        #    raise ValueError('A árvore ainda não possui uma estrutura RNP!')
 
     def inserir_ramo(self, no, ramo):
         if issubclass(self.dtype, int):
