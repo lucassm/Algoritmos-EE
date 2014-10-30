@@ -11,7 +11,13 @@ class No(object):
     """
     Classe No
     ---------
-    documentacao classe No
+        Classe que representa qualquer instancia que represente um nó em um
+        grafo
+
+    Parâmetros
+    ----------
+        nome : str identifica o nó
+        vizinhos : list identifica os nós que estão na vizinhança
     """
 
     def __init__(self, nome, vizinhos=list()):
@@ -25,7 +31,12 @@ class Aresta(object):
     """
     Classe Aresta
     -------------
-    documentacao classe Aresta
+        Classe que representa qualquer instancia que represente uma aresta em um grafo,
+        uma aresta liga dois nós vizinhos e pode ser ou não direcionada.
+
+    Parâmetros
+    ----------
+        nome : str identifica a aresta
     """
 
     n1 = None
@@ -40,7 +51,17 @@ class Arvore(object):
     """
     Classe Arvore
     -------------
-    documentacao classe Arvore
+        A classe *Arvore* representa um grafo do tipo arvore. Uma arvore é um grafo
+        conexo e que não possui ciclos em sua estrutura.
+
+        Oferece métodos para manipular, alterar e buscar informações dos ramos e nós
+        da *Arvore*.
+
+    Parâmetros
+    ----------
+        arvore : dict Dicionário que representa a árvore, onde as chaves são os nós
+        e os valores são listas com os vizinhos do nó que está como chave.
+        dtype : tipo dos nós que podem ser strings ou inteiros
     """
 
     def __init__(self, arvore, dtype=int):
@@ -55,6 +76,17 @@ class Arvore(object):
         self._arvore = None
 
     def ordena(self, raiz):
+        """
+        metodo ordena
+        -------------
+            Este método cria a representação no profundidade da arvore
+
+        Parâmetros
+        ----------
+            raiz : dtype Nó, presente na arvore, que sera a raiz da representação
+            nó profundidade
+
+        """
         assert isinstance(raiz, self.dtype), 'Erro no tipo do parâmetro raiz!'
         self.raiz = raiz
         self.rnp[1][0] = raiz
@@ -63,6 +95,18 @@ class Arvore(object):
         self._proc(raiz, visitados, pilha)
 
     def _proc(self, no, visitados, pilha):
+        """
+        método _proc
+        ------------
+            Este método faz uma busca em profundidade na arvore para que a
+            representação nó profundidade possa ser criada
+
+        Parâmetros
+        ----------
+            no : dtype Nó a ser visitado
+            visitados : list Lista de nós já visitados
+            pilha : list Lista para identificar em que nível do grafo a busca está
+        """
         visitados.append(no)
         pilha.append(no)
 

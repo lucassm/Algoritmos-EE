@@ -1,5 +1,4 @@
 # coding=utf-8
-from email.errors import NoBoundaryInMultipartDefect
 from numpy import size, array, mat
 
 from rnp import Arvore, Aresta
@@ -113,7 +112,7 @@ class Subestacao(Arvore):
 
         return arvore_da_rede
 
-    def gera_trechos_da_rede(self):
+    def gera_arvore_nos_de_carga(self):
 
         setor_raiz = self.setores[self.rnp[1][0]]
         self.arvore_nos_de_carga = Arvore(arvore=setor_raiz.arvore_do_setor, dtype=str)
@@ -121,10 +120,10 @@ class Subestacao(Arvore):
         print setor_raiz.rnp
         visitados = []
         pilha = []
-        self._gera_trechos_da_rede(setor_raiz, visitados, pilha)
+        self._gera_arvore_nos_de_carga(setor_raiz, visitados, pilha)
         self.rnp_nos_de_carga = self.arvore_nos_de_carga.rnp
 
-    def _gera_trechos_da_rede(self, setor, visitados, pilha):
+    def _gera_arvore_nos_de_carga(self, setor, visitados, pilha):
         visitados.append(setor.nome)
         pilha.append(setor.nome)
 
@@ -155,10 +154,10 @@ class Subestacao(Arvore):
             pilha.pop()
             if pilha:
                 anter = pilha.pop()
-                return self._gera_trechos_da_rede(self.setores[anter], visitados, pilha)
+                return self._gera_arvore_nos_de_carga(self.setores[anter], visitados, pilha)
             else:
                 return
-        return self._gera_trechos_da_rede(self.setores[prox], visitados, pilha)
+        return self._gera_arvore_nos_de_carga(self.setores[prox], visitados, pilha)
 
 
 class Chave(Aresta):
@@ -277,6 +276,6 @@ if __name__ == '__main__':
     sub1.ordena(raiz='S1')
     print sub1.rnp
 
-    sub1.gera_trechos_da_rede()
+    sub1.gera_arvore_nos_de_carga()
     print sub1.arvore_nos_de_carga.arvore
     print sub1.rnp_nos_de_carga
