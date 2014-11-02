@@ -10,13 +10,14 @@ class Setor(Arvore):
                                       'Setor deve ser do tipo string'
         assert isinstance(vizinhos, list), 'O parâmetro vizinhos da classe' \
                                            ' Setor deve ser do tipo list'
-        assert isinstance(nos_de_carga, dict), 'O parâmetro nos_de_carga da classe' \
-                                               'Setor deve ser do tipo dict'
+        assert isinstance(nos_de_carga, list), 'O parâmetro nos_de_carga da classe' \
+                                               'Setor deve ser do tipo list'
         self.nome = nome
         self.vizinhos = vizinhos
-        self.nos_de_carga = nos_de_carga
-        for no in self.nos_de_carga.values():
+        self.nos_de_carga = dict()
+        for no in nos_de_carga:
             no.setor = self.nome
+            self.nos_de_carga[no.nome] = no
 
         self.arvore_do_setor = self._gera_arvore_do_setor()
 
@@ -84,18 +85,25 @@ class Subestacao(Arvore):
     def __init__(self, nome, setores, chaves):
         assert isinstance(nome, str), 'O parâmetro nome da classe Subestação' \
                                       'deve ser do tipo string'
-        assert isinstance(setores, dict), 'O parâmetro setores da classe' \
+        assert isinstance(setores, list), 'O parâmetro setores da classe' \
                                           'Subestacao deve ser do tipo dict'
-        assert isinstance(chaves, dict), 'O parâmetro chaves da classe' \
+        assert isinstance(chaves, list), 'O parâmetro chaves da classe' \
                                          'Subestacao deve ser do tipo dict'
         self.nome = nome
-        self.setores = setores
-        self.chaves = chaves
-        self.trechos = dict()
+        self.setores = dict()
+        for setor in setores:
+            self.setores[setor.nome] = setor
+
+        self.chaves = dict()
+        for chave in chaves:
+            self.chaves[chave.nome] = chave
+
         self.nos_de_carga = dict()
-        for setor in setores.values():
+        for setor in self.setores.values():
             for no in setor.nos_de_carga.values():
                 self.nos_de_carga[no.nome] = no
+
+        self.trechos = dict()
 
         self.arvore_da_rede = self._gera_arvore_da_rede()
 
@@ -197,7 +205,7 @@ class Subestacao(Arvore):
                 if setor_1 != setor_2:
                     for chave in self.chaves.values():
                         if chave.n1 in (setor_1, setor_2) and chave.n2 in (setor_1, setor_2):
-                            self.trechos[n_1+n_2] = Trecho(nome=n_1 + n_2,
+                            self.trechos[n_1 + n_2] = Trecho(nome=n_1 + n_2,
                                                              n1=self.nos_de_carga[n_1],
                                                              n2=self.nos_de_carga[n_2],
                                                              chave=chave)
@@ -206,8 +214,32 @@ class Subestacao(Arvore):
                                                      n1=self.nos_de_carga[n_1],
                                                      n2=self.nos_de_carga[n_2])
 
-                print 'Trecho: ', (self.arvore_nos_de_carga.rnp[1, j],
-                                   self.arvore_nos_de_carga.rnp[1, i])
+    def podar(self, no, alterar_rnp=False):
+        poda = super(Subestacao, self).podar(no, alterar_rnp)
+        if alterar_rnp:
+            setores = dict()
+            for i in poda[1, :]:
+                setor = self.setores.pop(i)
+                setores[setor.nome] = setor
+
+            nos_de_carga = dict()
+            for setor in setores.values():
+                for j in setor.nos_de_carga.values():
+                    if j.nome in self.nos_de_carga.keys():
+                        no_de_carga = self.nos_de_carga.pop(j.nome)
+                        nos_de_carga[no_de_carga.nome] = no_de_carga
+
+            for setor in self.setores.values():
+                for no in setor.nos_de_carga.values():
+                    self.nos_de_carga[no.nome] = no
+                    if no.nome in nos_de_carga.keys():
+                        nos_de_carga.pop(no.nome)
+
+            # TODO: atualizar os parâmetros arvore, arvore_da_rede e arvore_nos_de_carga
+
+            return poda, setores, nos_de_carga
+        else:
+            return poda
 
 
 class Chave(Aresta):
@@ -217,7 +249,7 @@ class Chave(Aresta):
         self.estado = estado
 
     def __str__(self):
-        return 'Chave: %s' % self.nome
+        return 'Chave: %s - n1: %s, n2: %s' % (self.nome, self.n1.nome, self.n2.nome)
 
 
 if __name__ == '__main__':
@@ -251,117 +283,120 @@ if __name__ == '__main__':
     # os setores da Subestação S2;
     # _nos : dicionarios contendo objetos nos_de_carga que representam
     # os nós de carga dos setores em cada um dos trechos das
-    #           subestações;
+    # subestações;
     # _subestacoes : dicionario contendo objetos Subestacao que herdam
-    #           a classe Arvore e contém todos os elementos que
-    #           representam um ramo da rede elétrica, como chaves, setores,
-    #           nós de carga e trechos;
+    # a classe Arvore e contém todos os elementos que
+    # representam um ramo da rede elétrica, como chaves, setores,
+    # nós de carga e trechos;
 
-    _chaves = dict()
-
-    # chaves do alimentador de SE1
-    _chaves['1'] = Chave(nome='1', estado=1)
-    _chaves['2'] = Chave(nome='2', estado=1)
-    _chaves['3'] = Chave(nome='3', estado=1)
+    # chaves do alimentador de S1
+    ch1 = Chave(nome='1', estado=1)
+    ch2 = Chave(nome='2', estado=1)
+    ch3 = Chave(nome='3', estado=1)
 
     # chaves de Fronteira
-    _chaves['4'] = Chave(nome='4', estado=0)
-    _chaves['5'] = Chave(nome='5', estado=0)
-    _chaves['8'] = Chave(nome='8', estado=0)
+    ch4 = Chave(nome='4', estado=0)
+    ch5 = Chave(nome='5', estado=0)
+    ch8 = Chave(nome='8', estado=0)
 
-    # chaves do alimentador de SE2
-    _chaves['6'] = Chave(nome='6', estado=1)
-    _chaves['7'] = Chave(nome='7', estado=1)
+    # chaves do alimentador de S2
+    ch6 = Chave(nome='6', estado=1)
+    ch7 = Chave(nome='7', estado=1)
 
-    _setores_1 = dict()
+    # Nos de carga do alimentador S1
+    s1 = NoDeCarga(nome='S1', vizinhos=['A2'], potencia=0.0 + 0.0j)
+    a1 = NoDeCarga(nome='A1', vizinhos=['A2'], potencia=160 + 120j)
+    a2 = NoDeCarga(nome='A2', vizinhos=['S1', 'A1', 'A3', 'C1'], potencia=150 + 110j)
+    a3 = NoDeCarga(nome='A3', vizinhos=['A2', 'B1'], potencia=100 + 80j)
+    b1 = NoDeCarga(nome='B1', vizinhos=['B2', 'A3'], potencia=200 + 140j)
+    b2 = NoDeCarga(nome='B2', vizinhos=['B1', 'B3', 'E2'], potencia=150 + 110j)
+    b3 = NoDeCarga(nome='B3', vizinhos=['B2', 'C3'], potencia=100 + 80j)
+    c1 = NoDeCarga(nome='C1', vizinhos=['C2', 'C3', 'A2'], potencia=200 + 140j)
+    c2 = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
+    c3 = NoDeCarga(nome='C3', vizinhos=['C1', 'B3', 'E3'], potencia=100 + 80j)
 
-    # nos de carga do setor S1
-    _nos = dict()
-    _nos['S1'] = NoDeCarga(nome='S1', vizinhos=['A2'], potencia=0.0 + 0.0j)
-    _setores_1['S1'] = Setor(nome='S1', vizinhos=['A'], nos_de_carga=_nos)
+    # Nos de carga do alimentador S2
+    s2 = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j)
+    d1 = NoDeCarga(nome='D1', vizinhos=['S2', 'D2', 'D3', 'E1'], potencia=200 + 160j)
+    d2 = NoDeCarga(nome='D2', vizinhos=['D1'], potencia=90 + 40j)
+    d3 = NoDeCarga(nome='D3', vizinhos=['D1'], potencia=100 + 80j)
+    e1 = NoDeCarga(nome='E1', vizinhos=['E3', 'E2', 'D1'], potencia=100 + 40j)
+    e2 = NoDeCarga(nome='E2', vizinhos=['E1', 'B2'], potencia=110 + 70j)
+    e3 = NoDeCarga(nome='E3', vizinhos=['E1', 'C3'], potencia=150 + 80j)
 
-    # nos de carga do setor A
-    _nos = dict()
-    _nos['S1'] = NoDeCarga(nome='S1', vizinhos=['A2'], potencia=0.0 + 0.0j)
-    _nos['A1'] = NoDeCarga(nome='A1', vizinhos=['A2'], potencia=160 + 120j)
-    _nos['A2'] = NoDeCarga(nome='A2', vizinhos=['S1', 'A1', 'A3', 'C1'], potencia=150 + 110j)
-    _nos['A3'] = NoDeCarga(nome='A3', vizinhos=['A2', 'B1'], potencia=100 + 80j)
+    # Setor S1
+    st1 = Setor(nome='S1',
+                vizinhos=['A'],
+                nos_de_carga=[s1])
 
-    _setores_1['A'] = Setor(nome='A', vizinhos=['S1', 'B', 'C'], nos_de_carga=_nos)
+    # setor A
+    stA = Setor(nome='A',
+                vizinhos=['S1', 'B', 'C'],
+                nos_de_carga=[s1, a1, a2, a3])
 
-    # nos de carga do Setor B
-    _nos = dict()
-    _nos['A3'] = NoDeCarga(nome='A3', vizinhos=['A2', 'B1'], potencia=100 + 80j)
-    _nos['B1'] = NoDeCarga(nome='B1', vizinhos=['B2', 'A3'], potencia=200 + 140j)
-    _nos['B2'] = NoDeCarga(nome='B2', vizinhos=['B1', 'B3', 'E2'], potencia=150 + 110j)
-    _nos['B3'] = NoDeCarga(nome='B3', vizinhos=['B2', 'C3'], potencia=100 + 80j)
+    # Setor B
+    stB = Setor(nome='B',
+                vizinhos=['A'],
+                nos_de_carga=[a3, b1, b2, b3])
 
-    _setores_1['B'] = Setor(nome='B', vizinhos=['A'], nos_de_carga=_nos)
+    # Setor C
+    stC = Setor(nome='C',
+                vizinhos=['A'],
+                nos_de_carga=[a2, c1, c2, c3])
 
-    # nos de carga do Setor C
-    _nos = dict()
-    _nos['A2'] = NoDeCarga(nome='A2', vizinhos=['S1', 'A1', 'A3', 'C1'], potencia=150 + 110j)
-    _nos['C1'] = NoDeCarga(nome='C1', vizinhos=['C2', 'C3', 'A2'], potencia=200 + 140j)
-    _nos['C2'] = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
-    _nos['C3'] = NoDeCarga(nome='C3', vizinhos=['C1', 'B3', 'E3'], potencia=100 + 80j)
+    # Setor S2
+    st2 = Setor(nome='S2',
+                vizinhos=['D'],
+                nos_de_carga=[s2])
 
-    _setores_1['C'] = Setor(nome='C', vizinhos=['A'], nos_de_carga=_nos)
+    # Setor D
+    stD = Setor(nome='D',
+                vizinhos=['S2', 'E'],
+                nos_de_carga=[s2, d1, d2, d3])
 
-    _setores_2 = dict()
-
-    # nos de carga do setor S2
-    _nos = dict()
-    _nos['S2'] = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j)
-    _setores_2['S2'] = Setor(nome='S2', vizinhos=['D'], nos_de_carga=_nos)
-
-    # nos de carga do Setor D
-    _nos = dict()
-    _nos['S2'] = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j)
-    _nos['D1'] = NoDeCarga(nome='D1', vizinhos=['S2', 'D2', 'D3', 'E1'], potencia=200 + 160j)
-    _nos['D2'] = NoDeCarga(nome='D2', vizinhos=['D1'], potencia=90 + 40j)
-    _nos['D3'] = NoDeCarga(nome='D3', vizinhos=['D1'], potencia=100 + 80j)
-
-    _setores_2['D'] = Setor(nome='D', vizinhos=['S2', 'E'], nos_de_carga=_nos)
-
-    # nos de carga do Setor E
-    _nos = dict()
-    _nos['D1'] = NoDeCarga(nome='D1', vizinhos=['S2', 'D2', 'D3', 'E1'], potencia=200 + 160j)
-    _nos['E1'] = NoDeCarga(nome='E1', vizinhos=['E3', 'E2', 'D1'], potencia=100 + 40j)
-    _nos['E2'] = NoDeCarga(nome='E2', vizinhos=['E1', 'B2'], potencia=110 + 70j)
-    _nos['E3'] = NoDeCarga(nome='E3', vizinhos=['E1', 'C3'], potencia=150 + 80j)
-
-    _setores_2['E'] = Setor(nome='E', vizinhos=['D'], nos_de_carga=_nos)
+    # Setor E
+    stE = Setor(nome='E',
+                vizinhos=['D'],
+                nos_de_carga=[d1, e1, e2, e3])
 
     # ligação das chaves com os respectivos setores
-    _chaves['1'].n1 = _setores_1['S1']
-    _chaves['1'].n2 = _setores_1['A']
+    ch1.n1 = st1
+    ch1.n2 = stA
 
-    _chaves['2'].n1 = _setores_1['A']
-    _chaves['2'].n2 = _setores_1['B']
+    ch2.n1 = stA
+    ch2.n2 = stB
 
-    _chaves['3'].n1 = _setores_1['A']
-    _chaves['3'].n2 = _setores_1['C']
+    ch3.n1 = stA
+    ch3.n2 = stC
 
-    _chaves['4'].n1 = _setores_1['B']
-    _chaves['4'].n2 = _setores_2['E']
+    ch4.n1 = stB
+    ch4.n2 = stE
 
-    _chaves['5'].n1 = _setores_1['B']
-    _chaves['5'].n2 = _setores_1['C']
+    ch5.n1 = stB
+    ch5.n2 = stC
 
-    _chaves['6'].n1 = _setores_2['S2']
-    _chaves['6'].n2 = _setores_2['D']
+    ch6.n1 = st2
+    ch6.n2 = stD
 
-    _chaves['7'].n1 = _setores_2['D']
-    _chaves['7'].n2 = _setores_2['E']
+    ch7.n1 = stD
+    ch7.n2 = stE
 
-    _chaves['8'].n1 = _setores_1['C']
-    _chaves['8'].n2 = _setores_2['E']
+    ch8.n1 = stC
+    ch8.n2 = stE
 
-    _sub_1 = Subestacao(nome='S1', setores=_setores_1, chaves=_chaves)
-    _sub_2 = Subestacao(nome='S2', setores=_setores_2, chaves=_chaves)
+    # Subestacao S1
+    _sub_1 = Subestacao(nome='S1',
+                        setores=[st1, stA, stB, stC],
+                        chaves=[ch1, ch2, ch3, ch4, ch5, ch8])
+
+    # Subestacao S2
+    _sub_2 = Subestacao(nome='S2',
+                        setores=[st2, stD, stE],
+                        chaves=[ch6, ch7, ch4, ch8])
 
     _subestacoes = {_sub_1.nome: _sub_1, _sub_2.nome: _sub_2}
 
+    # Definicao da estrutura dos ramos da Subestacao S1
     for i, j in _sub_1.setores.iteritems():
         if i == 'S1':
             j.ordena(raiz='S1')
@@ -376,6 +411,7 @@ if __name__ == '__main__':
             j.ordena(raiz='A3')
             print j.rnp
 
+    # Definicao da estrutura dos ramos da Subestacao S2
     for i, j in _sub_2.setores.iteritems():
         if i == 'S2':
             j.ordena(raiz='S2')
@@ -395,10 +431,10 @@ if __name__ == '__main__':
 
     # Imprime a representação de todos os setores da subestção na representação
     # nó profundidade
-    #print sub1.rnp
+    # print sub1.rnp
 
-    #print sub1.arvore_nos_de_carga.arvore
-    #print sub1.rnp_nos_de_carga
+    # print sub1.arvore_nos_de_carga.arvore
+    # print sub1.rnp_nos_de_carga
 
     # imprime as rnp dos setores de S1
     for setor in _sub_1.setores.values():
