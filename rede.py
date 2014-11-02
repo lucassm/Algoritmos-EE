@@ -217,11 +217,13 @@ class Subestacao(Arvore):
     def podar(self, no, alterar_rnp=False):
         poda = super(Subestacao, self).podar(no, alterar_rnp)
         if alterar_rnp:
+            # for povoa dicionario com setores podados
             setores = dict()
             for i in poda[1, :]:
                 setor = self.setores.pop(i)
                 setores[setor.nome] = setor
 
+            # for povoa dicionario com nos de carga podados
             nos_de_carga = dict()
             for setor in setores.values():
                 for j in setor.nos_de_carga.values():
@@ -229,15 +231,37 @@ class Subestacao(Arvore):
                         no_de_carga = self.nos_de_carga.pop(j.nome)
                         nos_de_carga[no_de_carga.nome] = no_de_carga
 
+            # for identifica setores podados e atualiza dicionario
+            # de setores com os setores remanescentes
             for setor in self.setores.values():
-                for no in setor.nos_de_carga.values():
-                    self.nos_de_carga[no.nome] = no
-                    if no.nome in nos_de_carga.keys():
-                        nos_de_carga.pop(no.nome)
+                for no_de_carga in setor.nos_de_carga.values():
+                    self.nos_de_carga[no_de_carga.nome] = no_de_carga
+                    if no_de_carga.nome in nos_de_carga.keys():
+                        nos_de_carga.pop(no_de_carga.nome)
 
-            # TODO: atualizar os parâmetros arvore, arvore_da_rede e arvore_nos_de_carga
+            # for exclui os setores podados da arvore de setores
+            for setor in self.arvore.keys():
+                if setor in setores.keys():
+                    self.arvore.pop(setor)
 
-            return poda, setores, nos_de_carga
+            # for exclui os setores podados dos vizinhos dos setores
+            # remanescentes
+            for setor, vizinhos in self.arvore.iteritems():
+                for i in setores.keys():
+                    if i in vizinhos:
+                        vizinhos.remove(i)
+                        self.arvore[setor] = vizinhos
+
+            arvore_nos_de_carga = dict()
+            for no_de_carga in self.arvore_nos_de_carga.arvore.keys():
+                if no_de_carga in nos_de_carga.keys():
+                    arvore_nos_de_carga[no_de_carga] = self.arvore_nos_de_carga.arvore.pop(no_de_carga)
+
+            rnp_nos_de_carga = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 1], alterar_rnp=True)
+
+            # TODO: arvore_nos_de_carga
+
+            return poda, setores, nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga
         else:
             return poda
 
