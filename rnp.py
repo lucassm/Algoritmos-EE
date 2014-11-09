@@ -66,13 +66,10 @@ class Arvore(object):
 
     def __init__(self, arvore, dtype=int):
         assert isinstance(arvore, dict)
+
+        self.dtype = dtype
         self.arvore = arvore
         self.raiz = None
-        self.dtype = dtype
-        if issubclass(dtype, int):
-            self.rnp = array(mat('0; 0'), dtype=int)
-        else:
-            self.rnp = array(mat('0; 0'), dtype=str)
         self._arvore = None
 
     def ordena(self, raiz):
@@ -88,6 +85,12 @@ class Arvore(object):
 
         """
         assert isinstance(raiz, self.dtype), 'Erro no tipo do parâmetro raiz!'
+
+        if issubclass(self.dtype, int):
+            self.rnp = array(mat('0; 0'), dtype=int)
+        else:
+            self.rnp = array(mat('0; 0'), dtype=str)
+
         self.raiz = raiz
         self.rnp[1][0] = raiz
         visitados = []
@@ -163,39 +166,90 @@ class Arvore(object):
             alterar_rnp : boolean Indica se a poda deve ser virtual ou real.
         """
         assert isinstance(no, self.dtype), 'O parâmetro nó deve ser do tipo dtype'
-        poda, indice = self._busca_prof(no, retorna_array=True)
-        prof = poda[0][0]
+        rnp, indice = self._busca_prof(no, retorna_array=True)
+        prof = rnp[0, 0]
         indices_poda = list([indice])
+        arvore = dict()
+        arvore[rnp[1, 0]] = self.arvore.pop(rnp[1, 0])
+
         for i in range(indice + 1, size(self.rnp, axis=1)):
             prox = self.rnp[:, i]
             prox = reshape(prox, (2, 1))
-            if prox[0][0] > prof:
-                poda = concatenate((poda, prox), axis=1)
+            if prox[0, 0] > prof:
+                rnp = concatenate((rnp, prox), axis=1)
                 indices_poda.append(i)
+                arvore[prox[1, 0]] = self.arvore.pop(prox[1, 0])
             else:
                 break
         if alterar_rnp:
             self.rnp = delete(self.rnp, indices_poda, axis=1)
-        return poda
 
-    def inserir_ramo(self, no, ramo):
+        # for exclui o vizinho do nó raiz da poda que remanesceu
+        # na arvore podada
+        for i in arvore[rnp[1, 0]]:
+            if i not in arvore.keys():
+                arvore[rnp[1, 0]].remove(i)
+                self.arvore[i].remove(rnp[1, 0])
+
+        return rnp, arvore
+
+    def inserir_ramo_1(self, no, poda):
         if issubclass(self.dtype, int):
             assert isinstance(no, int), 'O parâmetro no deve ser do tipo int'
         else:
             assert isinstance(no, str), 'O parâmetro no deve ser do tipo str'
-        assert isinstance(ramo, ndarray), 'O parâmetro ramo deve ser do tipo ndarray'
+        assert issubclass(type(poda), tuple), 'O parâmetro poda deve ser uma tupla'
+
+        poda_rnp = poda[0]
+        poda_arvore = poda[1]
+
+        # atualização da arvore
+        poda_arvore[poda_rnp[1, 0]].append(no)
+        self.arvore[no].append(poda_rnp[1, 0])
+        self.arvore.update(poda_arvore)
+
+        # atualização da rnp
 
         prof_raiz, indice = self._busca_prof(no)
-        prof_raiz_ramo = ramo[0, 0]
+        prof_raiz_ramo = poda_rnp[0, 0]
 
-        for i in range(size(ramo, axis=1)):
-            prof_no = ramo[0, i]
+        for i in range(size(poda_rnp, axis=1)):
+            prof_no = poda_rnp[0, i]
             nova_prof = int(prof_no) - int(prof_raiz_ramo) + int(prof_raiz) + 1
 
             if issubclass(self.dtype, str):
-                ramo[0][i] = str(nova_prof)
+                poda_rnp[0][i] = str(nova_prof)
+            else:
+                poda_rnp[0][i] = nova_prof
 
-        self.rnp = insert(self.rnp, [indice+1], ramo, axis=1)
+        self.rnp = insert(self.rnp, [indice+1], poda_rnp, axis=1)
+
+    def inserir_ramo_2(self, no_de_inser, no_raiz, poda):
+        if issubclass(self.dtype, int):
+            assert isinstance(no_de_inser, int) and isinstance(no_raiz, int),\
+                'O parâmetro no deve ser do tipo int'
+        else:
+            assert isinstance(no_de_inser, str) and isinstance(no_raiz, str),\
+                'O parâmetro no deve ser do tipo str'
+        assert issubclass(type(poda), tuple), 'O parâmetro poda deve ser uma tupla!'
+        poda_rnp = poda[0]
+        poda_arvore = poda[1]
+
+        try:
+            indice = where(poda_rnp[1, :] == no_raiz)[0][0]
+            prof_raiz_poda = int(poda_rnp[0][indice])
+            prof_raiz, indice_raiz = self._busca_prof(no_de_inser)
+
+        except IndexError:
+            raise IndexError('O nó especificado não existe na árvore!')
+
+        # cria uma arvore temporaria, ordena de acordo com o parametro de entrada
+        # no_raiz e insere a arvore_temporaria na arvore de destino por meio do
+        # metodo de inserção 1
+        arvore_temp = Arvore(arvore=poda_arvore, dtype=self.dtype)
+        arvore_temp.ordena(no_raiz)
+        self.inserir_ramo_1(no_de_inser, (arvore_temp.rnp, arvore_temp.arvore))
+
 
     def _busca_prof(self, no, retorna_array=False):
         try:
@@ -210,7 +264,7 @@ class Arvore(object):
             return prof, indice
 
     def caminho_no_para_raiz(self, no, sentido=1):
-        if isinstance(self.dtype, int):
+        if issubclass(self.dtype, int):
             assert isinstance(no, int), 'O parâmetro no deve ser do tipo inteiro'
         else:
             assert isinstance(no, str), 'O parâmetro no deve ser do tipo string'
@@ -232,7 +286,7 @@ class Arvore(object):
 
     def caminho_no_para_no(self, n1, n2, sentido=1):
 
-        if isinstance(self.dtype, int):
+        if issubclass(self.dtype, int):
             assert isinstance(n1, int), 'O parâmetro n1 deve ser do tipo inteiro'
             assert isinstance(n2, int), 'O parâmetro n2 deve ser do tipo inteiro'
         else:
@@ -253,7 +307,21 @@ class Arvore(object):
                 if prox[1][0] == n2:
                     break
         else:
-            raise AttributeError('Os nós n1 e n2 não pertencem ao mesmo ramo!')
+            n1, n2 = n2, n1
+
+            caminho, indice = self._busca_prof(n1, retorna_array=True)
+            prof = int(caminho[0][0])
+
+            for i in range(indice, -1, -1):
+                prox = self.rnp[:, i]
+                prox = reshape(prox, (2, 1))
+                if int(prox[0, 0]) < prof:
+                    prof -= 1
+                    caminho = concatenate((caminho, prox), axis=1)
+                    if prox[1][0] == n2:
+                        break
+            else:
+                raise AttributeError('Os nós n1 e n2 não pertencem ao mesmo ramo!')
 
         if sentido == 1:
             return caminho
@@ -297,17 +365,36 @@ if __name__ == '__main__':
             18: [16],
             19: [15]}
 
+    # definição da arvore a1
     arv_1 = Arvore(nos1)
+
+    # ordenação da arvore a1
     arv_1.ordena(raiz=3)
+    print 'Representação RNP da arvore 1'
     print arv_1.rnp
-    # print arv_1.rnp_dic()
-    ram = arv_1.podar(5)
-    print ram
-    arv_1.inserir_ramo(8, ram)
+
+    # definição da arvore a2
+    arv_2 = Arvore(nos2)
+
+    # ordenação da arvore a2
+    arv_2.ordena(raiz=14)
+
+    print 'Representação RNP da arvore 2'
+    print arv_2.rnp
+
+    # operação de poda
+    poda = arv_1.podar(7, alterar_rnp=True)
+    print 'Ramo Podado da arvore 1'
+    print poda
+
+    print 'Representação RNP da arvore 1 depois da poda'
     print arv_1.rnp
+
     # print arv_1.caminho_no_para_raiz(no=12, sentido=1)
     # print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
 
-    arv_2 = Arvore(nos2)
-    arv_2.ordena(raiz=14)
+    # operação de inserção
+    arv_2.inserir_ramo_2(19, 4, poda)
+
+    print 'Representação RNP da arvore 2 depois da inserção do ramo podado da arvore 1'
     print arv_2.rnp

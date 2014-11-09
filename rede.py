@@ -19,16 +19,20 @@ class Setor(Arvore):
             no.setor = self.nome
             self.nos_de_carga[no.nome] = no
 
-        self.arvore_do_setor = self._gera_arvore_do_setor()
+        _arvore_do_setor = self._gera_arvore_do_setor()
 
-        super(Setor, self).__init__(self.arvore_do_setor, str)
+        super(Setor, self).__init__(_arvore_do_setor, str)
 
     def _gera_arvore_do_setor(self):
         arvore_do_setor = dict()
+        # for percorre os nós de carga do setor
         for i, j in self.nos_de_carga.iteritems():
             print '%-12s vizinhos %s' % (str(j), j.vizinhos)
             vizinhos = list()
+            # for percorre os vizinhos do nó de carga
             for k in j.vizinhos:
+                # condição só considera vizinho o nó de carga que está no
+                # no mesmo setor que o nó de carga analisado
                 if k in self.nos_de_carga.keys():
                     vizinhos.append(k)
             arvore_do_setor[i] = vizinhos
@@ -105,48 +109,98 @@ class Subestacao(Arvore):
 
         self.trechos = dict()
 
-        self.arvore_da_rede = self._gera_arvore_da_rede()
+        _arvore_da_rede = self._gera_arvore_da_rede()
 
-        super(Subestacao, self).__init__(self.arvore_da_rede, str)
+        super(Subestacao, self).__init__(_arvore_da_rede, str)
 
     def _gera_arvore_da_rede(self):
+        # for percorre os setores da subestação
         arvore_da_rede = dict()
         for i, j in self.setores.iteritems():
+            setores_outra_subest = set()
+
+            # for percorre os vizinhos do setor analisado
+            for w in j.vizinhos:
+                # se o setor vizinho ainda nao esta entre os vizinhos do
+                # setor vizinho este setor é setado na lista da vizinhança
+                # do setor analisado
+                if w in self.setores.keys():
+                    if i not in self.setores[w].vizinhos:
+                        self.setores[w].vizinhos.append(i)
+                else:
+                    # armazena os setores que pertencem a outra subestação
+                    setores_outra_subest.add(w)
+
             print '%-12s vizinhos %s' % (str(j), j.vizinhos)
-            arvore_da_rede[i] = j.vizinhos
+
+            # atualiza a arvore de setores
+            arvore_da_rede[i] = list(set(j.vizinhos) - setores_outra_subest)
+
 
         return arvore_da_rede
 
     def gera_arvore_nos_de_carga(self):
 
+        # define os nós de carga do setor raiz da subestação como os primeiros
+        # nós de carga a povoarem a arvore nós de carga e a rnp nós de carga
         setor_raiz = self.setores[self.rnp[1][0]]
-        self.arvore_nos_de_carga = Arvore(arvore=setor_raiz.arvore_do_setor, dtype=str)
+        self.arvore_nos_de_carga = Arvore(arvore=setor_raiz.arvore, dtype=str)
         self.arvore_nos_de_carga.ordena(raiz=setor_raiz.rnp[1][0])
+
+        # define as listas visitados e pilha, necessárias ao processo recursivo de visita
+        # dos setores da subestação
         visitados = []
         pilha = []
+
+        # inicia o processo iterativo de visita dos setores
+        # em busca de seus respectivos nós de carga
         self._gera_arvore_nos_de_carga(setor_raiz, visitados, pilha)
-        self.rnp_nos_de_carga = self.arvore_nos_de_carga.rnp
 
     def _gera_arvore_nos_de_carga(self, setor, visitados, pilha):
+
+        # atualiza as listas de recursão
         visitados.append(setor.nome)
         pilha.append(setor.nome)
 
-        vizinhos = setor.vizinhos
         # for percorre os setores vizinhos ao setor atual
         # que ainda não tenham sido visitados
+        vizinhos = setor.vizinhos
         for i in vizinhos:
-            if i not in visitados:
+
+            # esta condição testa se existe uma ligação entre os setores de uma mesma
+            # subestação, mas que possuem uma chave normalmente aberta entre eles.
+            # caso isto seja constatado o laço for é interrompido.
+            if i not in visitados and i in self.setores.keys():
+                for c in self.chaves.values():
+                    if c.n1.nome == setor.nome and c.n2.nome == i:
+                        if c.estado == 1:
+                            break
+                        else:
+                            pass
+                    elif c.n2.nome == setor.nome and c.n1.nome == i:
+                        if c.estado == 1:
+                            break
+                        else:
+                            pass
+                else:
+                    continue
                 prox = i
                 setor_vizinho = self.setores[i]
+
                 # for percorre os nós de carga do setor atual
                 for k in setor.nos_de_carga.keys():
                     # for verifica qual nó de carga em comum
                     # entre os nós de carga do setor atual e do vizinho
+                    if k == 'E3':
+                            print 'Opa E3'
+                            print setor_vizinho.nos_de_carga.keys()
                     if k in setor_vizinho.nos_de_carga.keys():
+                        # TODO: Remodelar este trecho de codigo
                         no = setor_vizinho.rnp[1, 1]
                         poda = setor_vizinho.podar(no)
-                        self.arvore_nos_de_carga.inserir_ramo(no=k, ramo=poda)
-                        for h, j in setor_vizinho.arvore_do_setor.iteritems():
+                        self.arvore_nos_de_carga.inserir_ramo_1(no=k, poda=poda)
+                        # for adiciona o novo no de carga na arvore_nos_de_carga
+                        for h, j in setor_vizinho.arvore.iteritems():
                             if h not in self.arvore_nos_de_carga.arvore.keys():
                                 self.arvore_nos_de_carga.arvore[h] = j
 
@@ -162,6 +216,11 @@ class Subestacao(Arvore):
             else:
                 return
         return self._gera_arvore_nos_de_carga(self.setores[prox], visitados, pilha)
+
+    def atualiza_arvore_da_rede(self):
+        _arvore_da_rede = self._gera_arvore_da_rede()
+        self.arvore = _arvore_da_rede
+
 
     def gera_trechos_da_rede(self):
         print self.arvore_nos_de_carga.rnp
@@ -215,11 +274,12 @@ class Subestacao(Arvore):
                                                      n2=self.nos_de_carga[n_2])
 
     def podar(self, no, alterar_rnp=False):
-        poda = super(Subestacao, self).podar(no, alterar_rnp)
+        rnp_setores = super(Subestacao, self).podar(no, alterar_rnp)
+
         if alterar_rnp:
             # for povoa dicionario com setores podados
             setores = dict()
-            for i in poda[1, :]:
+            for i in rnp_setores[1, :]:
                 setor = self.setores.pop(i)
                 setores[setor.nome] = setor
 
@@ -244,14 +304,34 @@ class Subestacao(Arvore):
                 if setor in setores.keys():
                     self.arvore.pop(setor)
 
-            # for exclui os setores podados dos vizinhos dos setores
+            # for exclue os setores podados dos vizinhos dos setores
             # remanescentes
-            for setor, vizinhos in self.arvore.iteritems():
-                for i in setores.keys():
-                    if i in vizinhos:
-                        vizinhos.remove(i)
-                        self.arvore[setor] = vizinhos
+            #for setor, vizinhos in self.arvore.iteritems():
+            #    for i in setores.keys():
+            #        if i in vizinhos:
+            #            vizinhos.remove(i)
+            #            self.arvore[setor] = vizinhos
 
+            # for exclue os nos de carga podados dos vizinhos dos nos de carga
+            # remanescentes
+            # for no_de_carga, vizinhos in self.arvore_nos_de_carga.arvore.iteritems():
+            #     for i, j in nos_de_carga.iteritems():
+            #         if i in vizinhos:
+            #             vizinhos.remove(i)
+            #             self.arvore_nos_de_carga.arvore[no_de_carga] = vizinhos
+
+            #for setor in self.setores.values():
+            #    for no_de_carga in setor.nos_de_carga.values():
+            #        for v in no_de_carga.vizinhos:
+            #            if v in nos_de_carga.keys():
+            #                no_de_carga.vizinhos.remove(v)
+            #                nos_de_carga[v].vizinhos.remove(no_de_carga.nome)
+            #                print 'No de carga ', no_de_carga.nome, ' excluido do vizinho ', v
+
+
+            # for povoa o dicionario de arvore_nos_de_carga com todos os nós de carga
+            # que pertenciam à arvore da subestação que sofreu a poda. Estes nós
+            # são excluídos da arvore desta subestação
             arvore_nos_de_carga = dict()
             for no_de_carga in self.arvore_nos_de_carga.arvore.keys():
                 if no_de_carga in nos_de_carga.keys():
@@ -259,11 +339,81 @@ class Subestacao(Arvore):
 
             rnp_nos_de_carga = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 1], alterar_rnp=True)
 
-            # TODO: arvore_nos_de_carga
+            # for povoa dicionario de chaves que estao nos trechos podados
+            # e retira do dicionario de chaves da arvore que esta sofrendo a poda
+            # as chaves que não fazem fronteira com os trechos remanescentes
+            chaves = dict()
+            for chave in self.chaves.values():
+                if chave.n1.nome in setores.keys():
+                    if not chave.n2.nome in self.setores.keys():
+                        chaves[chave.nome] = self.chaves.pop(chave.nome)
+                    else:
+                        chave.estado = 0
+                        chaves[chave.nome] = chave
+                elif chave.n2.nome in setores.keys():
+                    if not chave.n1.nome in self.setores.keys():
+                        chaves[chave.nome] = self.chaves.pop(chave.nome)
+                    else:
+                        chave.estado = 0
+                        chaves[chave.nome] = chave
 
-            return poda, setores, nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga
+            return (rnp_setores, setores,
+                    nos_de_carga, arvore_nos_de_carga,
+                    rnp_nos_de_carga, chaves)
         else:
-            return poda
+            return rnp_setores
+
+    def inserir_ramo_1(self, no, poda):
+        (rnp_setores, setores, nos_de_carga,
+         arvore_nos_de_carga, rnp_nos_de_carga,
+         chaves) = poda
+
+        # for identifica se existe alguma chave que permita a inserção do ramo na arvore
+        # da subestação que ira receber a inserção.
+        setor_insersao = self.setores[no]
+        setor_inserir = setores[rnp_setores[1, 0]]
+        for c in chaves.values():
+            if c.n1.nome == setor_inserir.nome and c.n2.nome == setor_insersao.nome:
+                print 'A chave de insersão é: %s' % c.nome
+                c.estado = 1
+                break
+            elif c.n2.nome == setor_inserir.nome and c.n1.nome == setor_insersao.nome:
+                print 'A chave de insersão é: %s' % c.nome
+                c.estado = 1
+                break
+        else:
+            print 'A insersao não foi possível pois nenhuma chave de fronteira foi encontrada!'
+            return
+
+        # Atualização dos nós nós de carga que estão nos setores podados
+        # for setor in self.setores.values():
+        #     for n1 in setor.nos_de_carga:
+        #         for n2 in
+
+        super(Subestacao, self).inserir_ramo_1(no, rnp_setores)
+        # atualiza setores da arvore da subestação atual
+        self.setores.update(setores)
+
+        # for exclui os vizinhos que pertencem a arvore da subestação anterior dos
+        # setores recebidos na inserção e que agora pertencem à arvore da subestação
+        # atual
+        for setor in setores.values():
+            for vizinho in setor.vizinhos:
+                if vizinho not in self.setores.keys():
+                    self.setores[setor.nome].vizinhos.remove(vizinho)
+
+        # adicona o setor vizinho da arvore da subestação atual no setor raiz da arvore
+        # resultante da poda
+        self.setores[rnp_setores[1, 0]].vizinhos.append(no)
+
+        self.nos_de_carga.update(nos_de_carga)
+        self.chaves.update(chaves)
+
+        # TODO: atualizar a self.arvore_nos_de_carga.arvore e a self.arvore_nos_de_carga.rnp
+        self.atualiza_arvore_da_rede()
+        self.gera_arvore_nos_de_carga()
+
+        pass
 
 
 class Chave(Aresta):
@@ -337,7 +487,7 @@ if __name__ == '__main__':
     b3 = NoDeCarga(nome='B3', vizinhos=['B2', 'C3'], potencia=100 + 80j)
     c1 = NoDeCarga(nome='C1', vizinhos=['C2', 'C3', 'A2'], potencia=200 + 140j)
     c2 = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
-    c3 = NoDeCarga(nome='C3', vizinhos=['C1', 'B3', 'E3'], potencia=100 + 80j)
+    c3 = NoDeCarga(nome='C3', vizinhos=['C1', 'E3', 'B3'], potencia=100 + 80j)
 
     # Nos de carga do alimentador S2
     s2 = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j)
@@ -360,12 +510,12 @@ if __name__ == '__main__':
 
     # Setor B
     stB = Setor(nome='B',
-                vizinhos=['A'],
+                vizinhos=['A', 'C'],
                 nos_de_carga=[a3, b1, b2, b3])
 
     # Setor C
     stC = Setor(nome='C',
-                vizinhos=['A'],
+                vizinhos=['A', 'E'],
                 nos_de_carga=[a2, c1, c2, c3])
 
     # Setor S2
@@ -380,7 +530,7 @@ if __name__ == '__main__':
 
     # Setor E
     stE = Setor(nome='E',
-                vizinhos=['D'],
+                vizinhos=['D', 'C'],
                 nos_de_carga=[d1, e1, e2, e3])
 
     # ligação das chaves com os respectivos setores
@@ -458,7 +608,6 @@ if __name__ == '__main__':
     # print sub1.rnp
 
     # print sub1.arvore_nos_de_carga.arvore
-    # print sub1.rnp_nos_de_carga
 
     # imprime as rnp dos setores de S1
     for setor in _sub_1.setores.values():
