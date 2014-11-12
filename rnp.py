@@ -193,7 +193,7 @@ class Arvore(object):
 
         return rnp, arvore
 
-    def inserir_ramo_1(self, no, poda):
+    def _inserir_ramo(self, no, poda):
         if issubclass(self.dtype, int):
             assert isinstance(no, int), 'O parâmetro no deve ser do tipo int'
         else:
@@ -204,9 +204,9 @@ class Arvore(object):
         poda_arvore = poda[1]
 
         # atualização da arvore
-        poda_arvore[poda_rnp[1, 0]].append(no)
-        self.arvore[no].append(poda_rnp[1, 0])
-        self.arvore.update(poda_arvore)
+        #poda_arvore[poda_rnp[1, 0]].append(no)
+        #self.arvore[no].append(poda_rnp[1, 0])
+        #self.arvore.update(poda_arvore)
 
         # atualização da rnp
 
@@ -222,33 +222,30 @@ class Arvore(object):
             else:
                 poda_rnp[0][i] = nova_prof
 
-        self.rnp = insert(self.rnp, [indice+1], poda_rnp, axis=1)
+        self.rnp = insert(self.rnp, [indice + 1], poda_rnp, axis=1)
 
-    def inserir_ramo_2(self, no_de_inser, no_raiz, poda):
+    def inserir_ramo(self, no_de_inser, poda, no_raiz=None):
         if issubclass(self.dtype, int):
-            assert isinstance(no_de_inser, int) and isinstance(no_raiz, int),\
-                'O parâmetro no deve ser do tipo int'
+            assert isinstance(no_de_inser, int), 'O parâmetro no deve ser do tipo int'
         else:
-            assert isinstance(no_de_inser, str) and isinstance(no_raiz, str),\
-                'O parâmetro no deve ser do tipo str'
+            assert isinstance(no_de_inser, str), 'O parâmetro no deve ser do tipo str'
+
         assert issubclass(type(poda), tuple), 'O parâmetro poda deve ser uma tupla!'
+
         poda_rnp = poda[0]
         poda_arvore = poda[1]
-
-        try:
-            indice = where(poda_rnp[1, :] == no_raiz)[0][0]
-            prof_raiz_poda = int(poda_rnp[0][indice])
-            prof_raiz, indice_raiz = self._busca_prof(no_de_inser)
-
-        except IndexError:
-            raise IndexError('O nó especificado não existe na árvore!')
 
         # cria uma arvore temporaria, ordena de acordo com o parametro de entrada
         # no_raiz e insere a arvore_temporaria na arvore de destino por meio do
         # metodo de inserção 1
         arvore_temp = Arvore(arvore=poda_arvore, dtype=self.dtype)
-        arvore_temp.ordena(no_raiz)
-        self.inserir_ramo_1(no_de_inser, (arvore_temp.rnp, arvore_temp.arvore))
+
+        if no_raiz is not None:
+            arvore_temp.ordena(no_raiz)
+        else:
+            arvore_temp.ordena(poda_rnp[1, 0])
+
+        self._inserir_ramo(no_de_inser, (arvore_temp.rnp, arvore_temp.arvore))
 
 
     def _busca_prof(self, no, retorna_array=False):
@@ -394,7 +391,7 @@ if __name__ == '__main__':
     # print arv_1.caminho_no_para_no(n1=13, n2=2, sentido=1)
 
     # operação de inserção
-    arv_2.inserir_ramo_2(19, 4, poda)
+    arv_2.inserir_ramo(19, poda, 7)
 
     print 'Representação RNP da arvore 2 depois da inserção do ramo podado da arvore 1'
     print arv_2.rnp
