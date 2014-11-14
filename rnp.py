@@ -204,9 +204,11 @@ class Arvore(object):
         poda_arvore = poda[1]
 
         # atualização da arvore
-        #poda_arvore[poda_rnp[1, 0]].append(no)
-        #self.arvore[no].append(poda_rnp[1, 0])
-        #self.arvore.update(poda_arvore)
+        if no not in poda_arvore[poda_rnp[1, 0]]:
+            poda_arvore[poda_rnp[1, 0]].append(no)
+        if poda_rnp[1, 0] not in self.arvore[no]:
+            self.arvore[no].append(poda_rnp[1, 0])
+        self.arvore.update(poda_arvore)
 
         # atualização da rnp
 

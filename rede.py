@@ -245,7 +245,7 @@ class Subestacao(Arvore):
                 setor_vizinho = self.setores[i]
                 no_insersao, rnp_insersao = setor_vizinho.rnp_associadas[setor.nome]
                 arvore_insersao = setor_vizinho._gera_arvore_do_setor()
-                
+
                 setor_vizinho.no_de_ligacao = no_insersao
 
                 self.arvore_nos_de_carga.inserir_ramo(no_insersao.nome, (rnp_insersao, arvore_insersao))
@@ -346,7 +346,7 @@ class Subestacao(Arvore):
                         nos_de_carga.pop(no_de_carga.nome)
 
             # poda o ramo na arvore da subetação
-            poda = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 1], alterar_rnp=True)
+            poda = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 0], alterar_rnp=True)
             rnp_nos_de_carga = poda[0]
             arvore_nos_de_carga = poda[1]
 
@@ -455,10 +455,10 @@ class Subestacao(Arvore):
 
             self.chaves[chaves_de_lig.keys()[i]].estado = 1
 
-        if n1 not in setor_inserir.nos_de_carga.keys():
-            setor_inserir.nos_de_carga.update({n1.nome: n1})
-        elif n2 not in setor_inserir.nos_de_carga:
-            setor_inserir.nos_de_carga.update({n1.nome: n1})
+        #if n1 not in setor_inserir.nos_de_carga.keys():
+        #    setor_inserir.nos_de_carga.update({n1.nome: n1})
+        #elif n2 not in setor_inserir.nos_de_carga:
+        #    setor_inserir.nos_de_carga.update({n1.nome: n1})
 
         self.atualiza_arvore_da_rede()
 
