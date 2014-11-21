@@ -156,7 +156,7 @@ class Subestacao(Arvore):
     # setores_outra_subest = set()
     #
     # # for percorre os vizinhos do setor analisado
-    #         for w in j.vizinhos:
+    # for w in j.vizinhos:
     #             # se o setor vizinho ainda nao esta entre os vizinhos do
     #             # setor vizinho este setor é setado na lista da vizinhança
     #             # do setor analisado
@@ -248,7 +248,10 @@ class Subestacao(Arvore):
 
                 setor_vizinho.no_de_ligacao = no_insersao
 
-                self.arvore_nos_de_carga.inserir_ramo(no_insersao.nome, (rnp_insersao, arvore_insersao))
+                setor_vizinho.rnp = rnp_insersao
+
+                self.arvore_nos_de_carga.inserir_ramo(no_insersao.nome, (rnp_insersao, arvore_insersao),
+                                                      no_raiz=rnp_insersao[1, 0])
                 break
             else:
                 continue
@@ -385,56 +388,10 @@ class Subestacao(Arvore):
         else:
             setor_inserir = setores[no_raiz]
 
-        # for identifica se existe alguma chave que permita a inserção do ramo na arvore
-        # da subestação que ira receber a inserção.
-
         setor_insersao = self.setores[no]
 
-        # for c in chaves.values():
-        #     if c.n1.nome == setor_insersao.nome:
-        #         setor_inserir = c.n2.nome
-        #         # print 'A chave de insersão é: %s' % c.nome
-        #         c.estado = 1
-        #         break
-        #     elif c.n2.nome == setor_insersao.nome:
-        #         setor_inserir = c.n1.nome
-        #         print 'A chave de insersão é: %s' % c.nome
-        #         c.estado = 1
-        #         break
-        # else:
-        #     print 'A insersao não foi possível pois nenhuma chave de fronteira foi encontrada!'
-        #     return
-
-        if setor_inserir.nome == setores[rnp_setores[1, 0]].nome:
-            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores))
-        else:
-            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores), no_raiz)
-
-        # Atualização dos nós nós de carga que estão nos setores podados
-        # for setor in self.setores.values():
-        #     for n1 in setor.nos_de_carga:
-        #         for n2 in
-
-        # atualiza setores da arvore da subestação atual
-        self.setores.update(setores)
-
-        # for exclui os vizinhos que pertencem a arvore da subestação anterior dos
-        # setores recebidos na inserção e que agora pertencem à arvore da subestação
-        # atual
-        #for setor in setores.values():
-        #    for vizinho in setor.vizinhos:
-        #        if vizinho not in self.setores.keys():
-        #            self.setores[setor.nome].vizinhos.remove(vizinho)
-
-        # adicona o setor vizinho da arvore da subestação atual no setor raiz da arvore
-        # resultante da poda
-        #self.setores[rnp_setores[1, 0]].vizinhos.append(no)
-
-        self.nos_de_carga.update(nos_de_carga)
-        self.chaves.update(chaves)
-
-        # TODO: atualizar a self.arvore_nos_de_carga.arvore e a self.arvore_nos_de_carga.rnp
-
+        # for identifica se existe alguma chave que permita a inserção do ramo na arvore
+        # da subestação que ira receber a inserção.
         chaves_de_lig = dict()
         # for percorre os nos de carga do setor de insersão
         for i in self.setores[setor_insersao.nome].nos_de_carga.values():
@@ -449,16 +406,22 @@ class Subestacao(Arvore):
         if not chaves_de_lig:
             print 'A insersao não foi possível pois nenhuma chave de fronteira foi encontrada!'
             return
+
+        i = randint(0, len(chaves_de_lig) - 1)
+        n1, n2 = chaves_de_lig[chaves_de_lig.keys()[i]]
+
+        self.chaves[chaves_de_lig.keys()[i]].estado = 1
+
+        if setor_inserir.nome == setores[rnp_setores[1, 0]].nome:
+            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores))
         else:
-            i = randint(0, len(chaves_de_lig) - 1)
-            n1, n2 = chaves_de_lig[chaves_de_lig.keys()[i]]
+            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores), no_raiz)
 
-            self.chaves[chaves_de_lig.keys()[i]].estado = 1
+        # atualiza setores da arvore da subestação atual
+        self.setores.update(setores)
 
-        #if n1 not in setor_inserir.nos_de_carga.keys():
-        #    setor_inserir.nos_de_carga.update({n1.nome: n1})
-        #elif n2 not in setor_inserir.nos_de_carga:
-        #    setor_inserir.nos_de_carga.update({n1.nome: n1})
+        self.nos_de_carga.update(nos_de_carga)
+        self.chaves.update(chaves)
 
         self.atualiza_arvore_da_rede()
 
@@ -622,7 +585,7 @@ if __name__ == '__main__':
 
     # Definicao da estrutura dos ramos da Subestacao S1
     # for i, j in _sub_1.setores.iteritems():
-    #     if i == 'S1':
+    # if i == 'S1':
     #         j.ordena(raiz='S1')
     #         print j.rnp
     #     elif i == 'A':
