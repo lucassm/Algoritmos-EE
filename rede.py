@@ -583,33 +583,6 @@ if __name__ == '__main__':
 
     _subestacoes = {_sub_1.nome: _sub_1, _sub_2.nome: _sub_2}
 
-    # Definicao da estrutura dos ramos da Subestacao S1
-    # for i, j in _sub_1.setores.iteritems():
-    # if i == 'S1':
-    #         j.ordena(raiz='S1')
-    #         print j.rnp
-    #     elif i == 'A':
-    #         j.ordena(raiz='A2')
-    #         print j.rnp
-    #     elif i == 'C':
-    #         j.ordena(raiz='C1')
-    #         print j.rnp
-    #     elif i == 'B':
-    #         j.ordena(raiz='B1')
-    #         print j.rnp
-    #
-    # # Definicao da estrutura dos ramos da Subestacao S2
-    # for i, j in _sub_2.setores.iteritems():
-    #     if i == 'S2':
-    #         j.ordena(raiz='S2')
-    #         print j.rnp
-    #     elif i == 'D':
-    #         j.ordena(raiz='D1')
-    #         print j.rnp
-    #     elif i == 'E':
-    #         j.ordena(raiz='E1')
-    #         print j.rnp
-
     _sub_1.ordena(raiz='S1')
     _sub_2.ordena(raiz='S2')
 
