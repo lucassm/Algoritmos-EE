@@ -73,9 +73,17 @@ class NoDeCarga(object):
         return 'No de Carga: ' + self.nome
 
 
-class Alimentador(Arvore):
-    def __init__(self):
-        pass
+class Subestacao(object):
+    def __init__(self, nome, alimentadores):
+        assert isinstance(nome, str), 'O parâmetro nome da classe Subestacao ' \
+                                      'deve ser do tipo str'
+        assert isinstance(alimentadores, list), 'O parâmetro alimentadores da classe ' \
+                                                'deve ser do tipo list'
+        self.nome = nome
+
+        self.alimentadores = dict()
+        for alimentador in alimentadores:
+            self.alimentadores[alimentador.nome] = alimentador
 
 
 class Trecho(Aresta):
@@ -98,14 +106,14 @@ class Trecho(Aresta):
         return 'Trecho: %s' % self.nome
 
 
-class Subestacao(Arvore):
+class Alimentador(Arvore):
     def __init__(self, nome, setores, chaves):
-        assert isinstance(nome, str), 'O parâmetro nome da classe Subestação' \
+        assert isinstance(nome, str), 'O parâmetro nome da classe Alimentador' \
                                       'deve ser do tipo string'
         assert isinstance(setores, list), 'O parâmetro setores da classe' \
-                                          'Subestacao deve ser do tipo list'
+                                          'Alimentador deve ser do tipo list'
         assert isinstance(chaves, list), 'O parâmetro chaves da classe' \
-                                         'Subestacao deve ser do tipo list'
+                                         'Alimentador deve ser do tipo list'
         self.nome = nome
 
         self.setores = dict()
@@ -147,7 +155,7 @@ class Subestacao(Arvore):
 
         _arvore_da_rede = self._gera_arvore_da_rede()
 
-        super(Subestacao, self).__init__(_arvore_da_rede, str)
+        super(Alimentador, self).__init__(_arvore_da_rede, str)
 
     # def _gera_arvore_da_rede(self):
     # # for percorre os setores da subestação
@@ -157,7 +165,7 @@ class Subestacao(Arvore):
     #
     # # for percorre os vizinhos do setor analisado
     # for w in j.vizinhos:
-    #             # se o setor vizinho ainda nao esta entre os vizinhos do
+    # # se o setor vizinho ainda nao esta entre os vizinhos do
     #             # setor vizinho este setor é setado na lista da vizinhança
     #             # do setor analisado
     #             if w in self.setores.keys():
@@ -175,7 +183,7 @@ class Subestacao(Arvore):
     #     return arvore_da_rede
 
     def ordena(self, raiz):
-        super(Subestacao, self).ordena(raiz)
+        super(Alimentador, self).ordena(raiz)
 
         for setor in self.setores.values():
             caminho = self.caminho_no_para_raiz(setor.nome)
@@ -321,7 +329,7 @@ class Subestacao(Arvore):
                                                      n2=self.nos_de_carga[n_2])
 
     def podar(self, no, alterar_rnp=False):
-        poda = super(Subestacao, self).podar(no, alterar_rnp)
+        poda = super(Alimentador, self).podar(no, alterar_rnp)
         rnp_setores = poda[0]
         arvore_setores = poda[1]
 
@@ -413,9 +421,9 @@ class Subestacao(Arvore):
         self.chaves[chaves_de_lig.keys()[i]].estado = 1
 
         if setor_inserir.nome == setores[rnp_setores[1, 0]].nome:
-            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores))
+            super(Alimentador, self).inserir_ramo(no, (rnp_setores, arvore_setores))
         else:
-            super(Subestacao, self).inserir_ramo(no, (rnp_setores, arvore_setores), no_raiz)
+            super(Alimentador, self).inserir_ramo(no, (rnp_setores, arvore_setores), no_raiz)
 
         # atualiza setores da arvore da subestação atual
         self.setores.update(setores)
@@ -571,23 +579,29 @@ if __name__ == '__main__':
     ch8.n1 = stC
     ch8.n2 = stE
 
-    # Subestacao S1
-    _sub_1 = Subestacao(nome='S1',
-                        setores=[st1, stA, stB, stC],
-                        chaves=[ch1, ch2, ch3, ch4, ch5, ch8])
+    # Alimentador 1 de S1
+    sub_1_al_1 = Alimentador(nome='S1_AL1',
+                             setores=[st1, stA, stB, stC],
+                             chaves=[ch1, ch2, ch3, ch4, ch5, ch8])
 
-    # Subestacao S2
-    _sub_2 = Subestacao(nome='S2',
-                        setores=[st2, stD, stE],
-                        chaves=[ch6, ch7, ch4, ch8])
+    # Alimentador 1 de S2
+    sub_2_al_1 = Alimentador(nome='S2_AL1',
+                             setores=[st2, stD, stE],
+                             chaves=[ch6, ch7, ch4, ch8])
 
-    _subestacoes = {_sub_1.nome: _sub_1, _sub_2.nome: _sub_2}
+    sub_1 = Subestacao(nome='S1', alimentadores=[sub_1_al_1])
 
-    _sub_1.ordena(raiz='S1')
-    _sub_2.ordena(raiz='S2')
+    sub_2 = Subestacao(nome='S2', alimentadores=[sub_2_al_1])
 
-    _sub_1.gera_arvore_nos_de_carga()
-    _sub_2.gera_arvore_nos_de_carga()
+    _subestacoes = {sub_1_al_1.nome: sub_1_al_1, sub_2_al_1.nome: sub_2_al_1}
+
+    sub_1_al_1.ordena(raiz='S1')
+    sub_2_al_1.ordena(raiz='S2')
+
+    sub_1_al_1.gera_arvore_nos_de_carga()
+    sub_2_al_1.gera_arvore_nos_de_carga()
+
+
 
     # Imprime a representação de todos os setores da subestção na representação
     # nó profundidade
@@ -596,7 +610,7 @@ if __name__ == '__main__':
     # print sub1.arvore_nos_de_carga.arvore
 
     # imprime as rnp dos setores de S1
-    #for setor in _sub_1.setores.values():
+    # for setor in _sub_1.setores.values():
     #    print 'setor: ', setor.nome
     #    print setor.rnp
 
