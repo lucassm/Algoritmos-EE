@@ -166,7 +166,7 @@ class Alimentador(Arvore):
     # # for percorre os vizinhos do setor analisado
     # for w in j.vizinhos:
     # # se o setor vizinho ainda nao esta entre os vizinhos do
-    #             # setor vizinho este setor é setado na lista da vizinhança
+    # # setor vizinho este setor é setado na lista da vizinhança
     #             # do setor analisado
     #             if w in self.setores.keys():
     #                 if i not in self.setores[w].vizinhos:
@@ -278,7 +278,9 @@ class Alimentador(Arvore):
 
 
     def gera_trechos_da_rede(self):
-        print self.arvore_nos_de_carga.rnp
+
+        self.trechos = dict()
+
         j = 0
         for i in range(1, size(self.arvore_nos_de_carga.rnp, axis=1)):
             prof_1 = int(self.arvore_nos_de_carga.rnp[0, i])
@@ -295,10 +297,15 @@ class Alimentador(Arvore):
                 n_2 = str(self.arvore_nos_de_carga.rnp[1, i])
                 setor_1 = None
                 setor_2 = None
+                print 'Trecho: ' + n_1 + '-' + n_2
+
+                # verifica quais os nós de carga existentes nas extremidades do trecho
+                # e se existe uma chave no trecho
+
                 for setor in self.setores.values():
-                    if n_1 in setor.nos_de_carga.keys() and n_1 != str(setor.rnp[1, 0]):
+                    if n_1 in setor.nos_de_carga.keys():
                         setor_1 = setor
-                    if n_2 in setor.nos_de_carga.keys() and n_2 != str(setor.rnp[1, 0]):
+                    if n_2 in setor.nos_de_carga.keys():
                         setor_2 = setor
 
                     if setor_1 is not None and setor_2 is not None:
@@ -379,6 +386,9 @@ class Alimentador(Arvore):
                         chave.estado = 0
                         chaves[chave.nome] = chave
 
+            # atualiza os trechos da rede
+            self.gera_trechos_da_rede()
+
             return (setores, arvore_setores, rnp_setores,
                     nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga,
                     chaves)
@@ -444,7 +454,11 @@ class Chave(Aresta):
         self.estado = estado
 
     def __str__(self):
-        return 'Chave: %s - n1: %s, n2: %s' % (self.nome, self.n1.nome, self.n2.nome)
+        if self.n1 is not None and self.n2 is not None:
+            return 'Chave: %s - n1: %s, n2: %s' % (self.nome, self.n1.nome, self.n2.nome)
+        else:
+            return 'Chave: %s' % self.nome
+
 
 
 if __name__ == '__main__':
@@ -611,7 +625,7 @@ if __name__ == '__main__':
 
     # imprime as rnp dos setores de S1
     # for setor in _sub_1.setores.values():
-    #    print 'setor: ', setor.nome
+    # print 'setor: ', setor.nome
     #    print setor.rnp
 
     # imprime as rnp dos setores de S2
