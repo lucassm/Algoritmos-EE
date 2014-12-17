@@ -30,6 +30,11 @@ nos_arvore_3 = {3: [27],
                 18: [19, 17],
                 17: [18]}
 
+nos_arvore_4 = {28:[29,30],
+                29:[28],
+                30:[28]}
+
+
 arvore_1 = Arvore(nos_arvore_1)
 arvore_1.ordena(raiz=1)
 
@@ -38,3 +43,5 @@ arvore_2.ordena(raiz=2)
 
 arvore_3 = Arvore(nos_arvore_3)
 arvore_3.ordena(raiz=3)
+arvore_4 = Arvore(nos_arvore_4)
+arvore_4.ordena(raiz=28)
