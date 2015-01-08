@@ -187,7 +187,7 @@ class Alimentador(Arvore):
 
         for setor in self.setores.values():
             caminho = self.caminho_no_para_raiz(setor.nome)
-            if setor.nome is not raiz:
+            if setor.nome != raiz:
                 setor_jusante = caminho[1, 1]
                 setor.rnp = setor.rnp_associadas[setor_jusante][1]
 
@@ -364,7 +364,7 @@ class Alimentador(Arvore):
                         nos_de_carga.pop(no_de_carga.nome)
 
             # poda o ramo na arvore da subetação
-            poda = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 0], alterar_rnp=True)
+            poda = self.arvore_nos_de_carga.podar(setores[no].rnp[1, 0], alterar_rnp=alterar_rnp)
             rnp_nos_de_carga = poda[0]
             arvore_nos_de_carga = poda[1]
 
@@ -460,6 +460,23 @@ class Chave(Aresta):
             return 'Chave: %s' % self.nome
 
 
+class Transformador(object):
+
+    def __init__(self, tensao_primario, tensao_secundario, potencia, impedancia):
+        assert isinstance(tensao_secundario, float), 'O parâmetro tensao_secundario deve ser do tipo float'
+        assert isinstance(tensao_primario, float), 'O parâmetro tensao_primario deve ser do tipo float'
+        assert isinstance(potencia, float), 'O parâmetro potencia deve ser do tipo float'
+        assert isinstance(impedancia, complex), 'O parâmetro impedancia deve ser do tipo complex'
+
+        self.tensao_primario = tensao_primario
+        self.tensao_secundario = tensao_secundario
+        self.potencia = potencia
+        self.impedancia = impedancia
+
+
+class Condutor(object):
+    def __init__(self, tipo):
+        self.tipo = tipo
 
 if __name__ == '__main__':
     # Este trecho do módulo faz parte de sua documentacao e serve como exemplo de como
