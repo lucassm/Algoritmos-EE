@@ -72,7 +72,7 @@ class Arvore(object):
         self.raiz = None
         self._arvore = None
 
-    def ordena(self, raiz):
+    def ordenar(self, raiz):
         """
         metodo ordena
         -------------
@@ -243,9 +243,9 @@ class Arvore(object):
         arvore_temp = Arvore(arvore=poda_arvore, dtype=self.dtype)
 
         if no_raiz is not None:
-            arvore_temp.ordena(no_raiz)
+            arvore_temp.ordenar(no_raiz)
         else:
-            arvore_temp.ordena(poda_rnp[1, 0])
+            arvore_temp.ordenar(poda_rnp[1, 0])
 
         self._inserir_ramo(no_de_inser, (arvore_temp.rnp, arvore_temp.arvore))
 
@@ -368,7 +368,7 @@ if __name__ == '__main__':
     arv_1 = Arvore(nos1)
 
     # ordenação da arvore a1
-    arv_1.ordena(raiz=3)
+    arv_1.ordenar(raiz=3)
     print 'Representação RNP da arvore 1'
     print arv_1.rnp
 
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     arv_2 = Arvore(nos2)
 
     # ordenação da arvore a2
-    arv_2.ordena(raiz=14)
+    arv_2.ordenar(raiz=14)
 
     print 'Representação RNP da arvore 2'
     print arv_2.rnp

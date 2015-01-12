@@ -31,10 +31,10 @@ nos_arvore_3 = {3: [27],
                 17: [18]}
 
 arvore_1 = Arvore(nos_arvore_1)
-arvore_1.ordena(raiz=1)
+arvore_1.ordenar(raiz=1)
 
 arvore_2 = Arvore(nos_arvore_2)
-arvore_2.ordena(raiz=2)
+arvore_2.ordenar(raiz=2)
 
 arvore_3 = Arvore(nos_arvore_3)
-arvore_3.ordena(raiz=3)
+arvore_3.ordenar(raiz=3)

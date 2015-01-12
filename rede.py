@@ -74,20 +74,27 @@ class NoDeCarga(object):
 
 
 class Subestacao(object):
-    def __init__(self, nome, alimentadores):
+    def __init__(self, nome, alimentadores, transformadores):
         assert isinstance(nome, str), 'O parâmetro nome da classe Subestacao ' \
                                       'deve ser do tipo str'
         assert isinstance(alimentadores, list), 'O parâmetro alimentadores da classe ' \
                                                 'deve ser do tipo list'
+
+        assert isinstance(transformadores, list), 'O parâmetro alimentadores da classe ' \
+                                                  'deve ser do tipo list'
         self.nome = nome
 
         self.alimentadores = dict()
         for alimentador in alimentadores:
             self.alimentadores[alimentador.nome] = alimentador
 
+        self.transformadores = dict()
+        for transformador in transformadores:
+            self.transformadores[transformador.nome] = transformador
+
 
 class Trecho(Aresta):
-    def __init__(self, nome, n1, n2, chave=None):
+    def __init__(self, nome, n1, n2, chave=None, condutor=None, comprimento=None):
         assert isinstance(nome, str), 'O parâmetro nome da classe Trecho ' \
                                       'deve ser do tipo str'
         assert isinstance(n1, NoDeCarga), 'O parâmetro n1 da classe Trecho ' \
@@ -101,6 +108,8 @@ class Trecho(Aresta):
         self.n1 = n1
         self.n2 = n2
         self.chave = chave
+        self.condutor = condutor
+        self.comprimento = comprimento
 
     def __str__(self):
         return 'Trecho: %s' % self.nome
@@ -147,7 +156,7 @@ class Alimentador(Arvore):
                             nos_de_ligacao.append((j, i))
 
                 for no in nos_de_ligacao:
-                    setor.ordena(no[1].nome)
+                    setor.ordenar(no[1].nome)
                     setor.rnp_associadas[setor_vizinho.nome] = (no[0], setor.rnp)
                     print 'RNP: ', setor.rnp
 
@@ -157,33 +166,8 @@ class Alimentador(Arvore):
 
         super(Alimentador, self).__init__(_arvore_da_rede, str)
 
-    # def _gera_arvore_da_rede(self):
-    # # for percorre os setores da subestação
-    # arvore_da_rede = dict()
-    # for i, j in self.setores.iteritems():
-    # setores_outra_subest = set()
-    #
-    # # for percorre os vizinhos do setor analisado
-    # for w in j.vizinhos:
-    # # se o setor vizinho ainda nao esta entre os vizinhos do
-    # # setor vizinho este setor é setado na lista da vizinhança
-    #             # do setor analisado
-    #             if w in self.setores.keys():
-    #                 if i not in self.setores[w].vizinhos:
-    #                     self.setores[w].vizinhos.append(i)
-    #             else:
-    #                 # armazena os setores que pertencem a outra subestação
-    #                 setores_outra_subest.add(w)
-    #
-    #         print '%-12s vizinhos %s' % (str(j), j.vizinhos)
-    #
-    #         # atualiza a arvore de setores
-    #         arvore_da_rede[i] = list(set(j.vizinhos) - setores_outra_subest)
-    #
-    #     return arvore_da_rede
-
-    def ordena(self, raiz):
-        super(Alimentador, self).ordena(raiz)
+    def ordenar(self, raiz):
+        super(Alimentador, self).ordenar(raiz)
 
         for setor in self.setores.values():
             caminho = self.caminho_no_para_raiz(setor.nome)
@@ -203,14 +187,13 @@ class Alimentador(Arvore):
 
         return arvore_da_rede
 
-
-    def gera_arvore_nos_de_carga(self):
+    def gerar_arvore_nos_de_carga(self):
 
         # define os nós de carga do setor raiz da subestação como os primeiros
         # nós de carga a povoarem a arvore nós de carga e a rnp nós de carga
         setor_raiz = self.setores[self.rnp[1][0]]
         self.arvore_nos_de_carga = Arvore(arvore=setor_raiz._gera_arvore_do_setor(), dtype=str)
-        self.arvore_nos_de_carga.ordena(raiz=setor_raiz.rnp[1][0])
+        self.arvore_nos_de_carga.ordenar(raiz=setor_raiz.rnp[1][0])
 
         # define as listas visitados e pilha, necessárias ao processo recursivo de visita
         # dos setores da subestação
@@ -219,9 +202,9 @@ class Alimentador(Arvore):
 
         # inicia o processo iterativo de visita dos setores
         # em busca de seus respectivos nós de carga
-        self._gera_arvore_nos_de_carga(setor_raiz, visitados, pilha)
+        self._gerar_arvore_nos_de_carga(setor_raiz, visitados, pilha)
 
-    def _gera_arvore_nos_de_carga(self, setor, visitados, pilha):
+    def _gerar_arvore_nos_de_carga(self, setor, visitados, pilha):
 
         # atualiza as listas de recursão
         visitados.append(setor.nome)
@@ -267,17 +250,17 @@ class Alimentador(Arvore):
             pilha.pop()
             if pilha:
                 anter = pilha.pop()
-                return self._gera_arvore_nos_de_carga(self.setores[anter], visitados, pilha)
+                return self._gerar_arvore_nos_de_carga(self.setores[anter], visitados, pilha)
             else:
                 return
-        return self._gera_arvore_nos_de_carga(self.setores[prox], visitados, pilha)
+        return self._gerar_arvore_nos_de_carga(self.setores[prox], visitados, pilha)
 
-    def atualiza_arvore_da_rede(self):
+    def atualizar_arvore_da_rede(self):
         _arvore_da_rede = self._gera_arvore_da_rede()
         self.arvore = _arvore_da_rede
 
 
-    def gera_trechos_da_rede(self):
+    def gerar_trechos_da_rede(self):
 
         self.trechos = dict()
 
@@ -335,6 +318,11 @@ class Alimentador(Arvore):
                                                      n1=self.nos_de_carga[n_1],
                                                      n2=self.nos_de_carga[n_2])
 
+    def calcular_potencia(self):
+        potencia = 0.0 + 0.0j
+        for no in self.nos_de_carga.values():
+            potencia += no.potencia
+
     def podar(self, no, alterar_rnp=False):
         poda = super(Alimentador, self).podar(no, alterar_rnp)
         rnp_setores = poda[0]
@@ -387,7 +375,7 @@ class Alimentador(Arvore):
                         chaves[chave.nome] = chave
 
             # atualiza os trechos da rede
-            self.gera_trechos_da_rede()
+            self.gerar_trechos_da_rede()
 
             return (setores, arvore_setores, rnp_setores,
                     nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga,
@@ -441,10 +429,10 @@ class Alimentador(Arvore):
         self.nos_de_carga.update(nos_de_carga)
         self.chaves.update(chaves)
 
-        self.atualiza_arvore_da_rede()
+        self.atualizar_arvore_da_rede()
 
         #self.arvore_nos_de_carga.inserir_ramo_1()
-        self.gera_arvore_nos_de_carga()
+        self.gerar_arvore_nos_de_carga()
 
 
 class Chave(Aresta):
@@ -461,13 +449,14 @@ class Chave(Aresta):
 
 
 class Transformador(object):
-
-    def __init__(self, tensao_primario, tensao_secundario, potencia, impedancia):
+    def __init__(self, nome, tensao_primario, tensao_secundario, potencia, impedancia):
+        assert isinstance(nome, str), 'O parâmetro nome deve ser do tipo str'
         assert isinstance(tensao_secundario, float), 'O parâmetro tensao_secundario deve ser do tipo float'
         assert isinstance(tensao_primario, float), 'O parâmetro tensao_primario deve ser do tipo float'
         assert isinstance(potencia, float), 'O parâmetro potencia deve ser do tipo float'
         assert isinstance(impedancia, complex), 'O parâmetro impedancia deve ser do tipo complex'
 
+        self.nome = nome
         self.tensao_primario = tensao_primario
         self.tensao_secundario = tensao_secundario
         self.potencia = potencia
@@ -477,6 +466,7 @@ class Transformador(object):
 class Condutor(object):
     def __init__(self, tipo):
         self.tipo = tipo
+
 
 if __name__ == '__main__':
     # Este trecho do módulo faz parte de sua documentacao e serve como exemplo de como
@@ -620,17 +610,29 @@ if __name__ == '__main__':
                              setores=[st2, stD, stE],
                              chaves=[ch6, ch7, ch4, ch8])
 
-    sub_1 = Subestacao(nome='S1', alimentadores=[sub_1_al_1])
+    t1 = Transformador(nome='S1_T1',
+                       tensao_primario=69e3,
+                       tensao_secundario=13.8e3,
+                       potencia=10e6,
+                       impedancia=0.5 + 0.2j)
 
-    sub_2 = Subestacao(nome='S2', alimentadores=[sub_2_al_1])
+    t2 = Transformador(nome='S2_T1',
+                       tensao_primario=69e3,
+                       tensao_secundario=13.8e3,
+                       potencia=10e6,
+                       impedancia=0.5 + 0.2j)
+
+    sub_1 = Subestacao(nome='S1', alimentadores=[sub_1_al_1], transformadores=[t1])
+
+    sub_2 = Subestacao(nome='S2', alimentadores=[sub_2_al_1], transformadores=[t2])
 
     _subestacoes = {sub_1_al_1.nome: sub_1_al_1, sub_2_al_1.nome: sub_2_al_1}
 
-    sub_1_al_1.ordena(raiz='S1')
-    sub_2_al_1.ordena(raiz='S2')
+    sub_1_al_1.ordenar(raiz='S1')
+    sub_2_al_1.ordenar(raiz='S2')
 
-    sub_1_al_1.gera_arvore_nos_de_carga()
-    sub_2_al_1.gera_arvore_nos_de_carga()
+    sub_1_al_1.gerar_arvore_nos_de_carga()
+    sub_2_al_1.gerar_arvore_nos_de_carga()
 
 
 
@@ -643,7 +645,7 @@ if __name__ == '__main__':
     # imprime as rnp dos setores de S1
     # for setor in _sub_1.setores.values():
     # print 'setor: ', setor.nome
-    #    print setor.rnp
+    # print setor.rnp
 
     # imprime as rnp dos setores de S2
     #for setor in _sub_2.setores.values():
