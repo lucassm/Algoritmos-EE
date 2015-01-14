@@ -94,20 +94,18 @@ class Subestacao(object):
 
 
 class Trecho(Aresta):
-    def __init__(self, nome, n1, n2, chave=None, condutor=None, comprimento=None):
+    def __init__(self, nome, n1, n2, condutor=None, comprimento=None):
         assert isinstance(nome, str), 'O parâmetro nome da classe Trecho ' \
                                       'deve ser do tipo str'
-        assert isinstance(n1, NoDeCarga), 'O parâmetro n1 da classe Trecho ' \
-                                          'deve ser do tipo No de carga'
-        assert isinstance(n2, NoDeCarga), 'O parâmetro n2 da classe Trecho' \
-                                          'deve ser do tipo No de carga'
-        assert isinstance(chave, Chave) or \
-               chave is None, 'O parâmetro nome da classe Trecho deve' \
-                              ' ser do tipo Chave'
+        assert isinstance(n1, NoDeCarga) or isinstance(n1, Chave), 'O parâmetro n1 da classe Trecho ' \
+                                                                   'deve ser do tipo No de carga ' \
+                                                                   'ou do tipo Chave'
+        assert isinstance(n2, NoDeCarga) or isinstance(n2, Chave), 'O parâmetro n2 da classe Trecho ' \
+                                                                   'deve ser do tipo No de carga ' \
+                                                                   'ou do tipo Chave'
         super(Trecho, self).__init__(nome)
         self.n1 = n1
         self.n2 = n2
-        self.chave = chave
         self.condutor = condutor
         self.comprimento = comprimento
 
@@ -116,7 +114,7 @@ class Trecho(Aresta):
 
 
 class Alimentador(Arvore):
-    def __init__(self, nome, setores, chaves):
+    def __init__(self, nome, setores, trechos, chaves):
         assert isinstance(nome, str), 'O parâmetro nome da classe Alimentador' \
                                       'deve ser do tipo string'
         assert isinstance(setores, list), 'O parâmetro setores da classe' \
@@ -137,6 +135,10 @@ class Alimentador(Arvore):
         for setor in setores:
             for no in setor.nos_de_carga.values():
                 self.nos_de_carga[no.nome] = no
+
+        self.trechos = dict()
+        for trecho in trechos:
+            self.trechos[trecho.nome] = trecho
 
         for setor in self.setores.values():
             print 'Setor: ', setor.nome
@@ -159,8 +161,6 @@ class Alimentador(Arvore):
                     setor.ordenar(no[1].nome)
                     setor.rnp_associadas[setor_vizinho.nome] = (no[0], setor.rnp)
                     print 'RNP: ', setor.rnp
-
-        self.trechos = dict()
 
         _arvore_da_rede = self._gera_arvore_da_rede()
 
@@ -374,12 +374,17 @@ class Alimentador(Arvore):
                         chave.estado = 0
                         chaves[chave.nome] = chave
 
-            # atualiza os trechos da rede
-            self.gerar_trechos_da_rede()
+            # for poda os trechos dos setores podados e povoa o dicionario trechos
+            # para que possa ser repassado juntamente com os outros dados da poda
+            trechos = dict()
+            for no in rnp_nos_de_carga[1, :]:
+                for trecho in self.trechos.values():
+                    if trecho.n1.nome == no or trecho.n2.nome == no:
+                        trechos[trecho.nome] = self.trechos.pop(trecho.nome)
 
             return (setores, arvore_setores, rnp_setores,
                     nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga,
-                    chaves)
+                    chaves, trechos)
         else:
             return rnp_setores
 
@@ -387,7 +392,7 @@ class Alimentador(Arvore):
 
         (setores, arvore_setores, rnp_setores,
          nos_de_carga, arvore_nos_de_carga, rnp_nos_de_carga,
-         chaves) = poda
+         chaves, trechos) = poda
 
         if no_raiz is None:
             setor_inserir = setores[rnp_setores[1, 0]]
@@ -423,15 +428,22 @@ class Alimentador(Arvore):
         else:
             super(Alimentador, self).inserir_ramo(no, (rnp_setores, arvore_setores), no_raiz)
 
-        # atualiza setores da arvore da subestação atual
+        # atualiza setores do alimentador
         self.setores.update(setores)
 
+        # atualiza os nos de carga do alimentador
         self.nos_de_carga.update(nos_de_carga)
+
+        # atualiza as chaves do alimentador
         self.chaves.update(chaves)
 
+        # atualiza os trechos do alimentador
+        self.trechos.update(trechos)
+
+        # atualiza a arvore de setores do alimentador
         self.atualizar_arvore_da_rede()
 
-        #self.arvore_nos_de_carga.inserir_ramo_1()
+        # atualiza a arvore de nos de carga do alimentador
         self.gerar_arvore_nos_de_carga()
 
 
@@ -464,8 +476,13 @@ class Transformador(object):
 
 
 class Condutor(object):
-    def __init__(self, tipo):
-        self.tipo = tipo
+    def __init__(self, nome, rp, xp, rz, xz, ampacidade):
+        self.nome = nome
+        self.rp = rp
+        self.xp = xp
+        self.rz = rz
+        self.xz = xz
+        self.ampacidade = ampacidade
 
 
 if __name__ == '__main__':
@@ -519,7 +536,7 @@ if __name__ == '__main__':
     ch6 = Chave(nome='6', estado=1)
     ch7 = Chave(nome='7', estado=1)
 
-    # Nos de carga do alimentador S1
+    # Nos de carga do alimentador S1_AL1
     s1 = NoDeCarga(nome='S1', vizinhos=['A2'], potencia=0.0 + 0.0j, chaves=['1'])
     a1 = NoDeCarga(nome='A1', vizinhos=['A2'], potencia=160 + 120j)
     a2 = NoDeCarga(nome='A2', vizinhos=['S1', 'A1', 'A3', 'C1'], potencia=150 + 110j, chaves=['1', '3'])
@@ -531,7 +548,7 @@ if __name__ == '__main__':
     c2 = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
     c3 = NoDeCarga(nome='C3', vizinhos=['C1', 'E3', 'B3'], potencia=100 + 80j, chaves=['5', '8'])
 
-    # Nos de carga do alimentador S2
+    # Nos de carga do alimentador S2_AL1
     s2 = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j, chaves=['6'])
     d1 = NoDeCarga(nome='D1', vizinhos=['S2', 'D2', 'D3', 'E1'], potencia=200 + 160j, chaves=['6', '7'])
     d2 = NoDeCarga(nome='D2', vizinhos=['D1'], potencia=90 + 40j)
@@ -539,6 +556,44 @@ if __name__ == '__main__':
     e1 = NoDeCarga(nome='E1', vizinhos=['E3', 'E2', 'D1'], potencia=100 + 40j, chaves=['7'])
     e2 = NoDeCarga(nome='E2', vizinhos=['E1', 'B2'], potencia=110 + 70j, chaves=['4'])
     e3 = NoDeCarga(nome='E3', vizinhos=['E1', 'C3'], potencia=150 + 80j, chaves=['8'])
+
+    cond_1 = Condutor(nome='CAA 266R', rp=0.2391, xp=0.37895, rz=0.41693, xz=1.55591, ampacidade=301)
+
+    # Trechos do alimentador S1_AL1
+    s1_ch1 = Trecho(nome='S1CH1', n1=s1, n2=ch1, condutor=cond_1, comprimento=0.01)
+
+    ch1_a2 = Trecho(nome='CH1A2', n1=ch1, n2=a2, condutor=cond_1, comprimento=1.0)
+    a2_a1 = Trecho(nome='A2A1', n1=a2, n2=a1, condutor=cond_1, comprimento=1.0)
+    a2_a3 = Trecho(nome='A2A3', n1=a2, n2=a3, condutor=cond_1, comprimento=1.0)
+    a2_ch3 = Trecho(nome='A2CH3', n1=a2, n2=ch3, condutor=cond_1, comprimento=0.5)
+    a3_ch2 = Trecho(nome='A3CH2', n1=a3, n2=ch2, condutor=cond_1, comprimento=0.5)
+
+    ch3_c1 = Trecho(nome='CH3C1', n1=ch3, n2=c1, condutor=cond_1, comprimento=0.5)
+    c1_c2 = Trecho(nome='C1C2', n1=c1, n2=c2, condutor=cond_1, comprimento=1.0)
+    c1_c3 = Trecho(nome='C1C3', n1=c1, n2=c3, condutor=cond_1, comprimento=1.0)
+    c3_ch8 = Trecho(nome='C3CH8', n1=c3, n2=ch8, condutor=cond_1, comprimento=0.5)
+    c3_ch5 = Trecho(nome='C3CH5', n1=c3, n2=ch5, condutor=cond_1, comprimento=0.5)
+
+    ch2_b1 = Trecho(nome='CH2B1', n1=ch2, n2=b1, condutor=cond_1, comprimento=0.5)
+    b1_b2 = Trecho(nome='B1B2', n1=b1, n2=b2, condutor=cond_1, comprimento=1.0)
+    b2_ch4 = Trecho(nome='B2CH4', n1=b2, n2=ch4, condutor=cond_1, comprimento=0.5)
+    b2_b3 = Trecho(nome='B2B3', n1=b2, n2=b3, condutor=cond_1, comprimento=1.0)
+    b3_ch5 = Trecho(nome='B3CH5', n1=b3, n2=ch5, condutor=cond_1, comprimento=0.5)
+
+    # Trechos do alimentador S2_AL1
+    s2_ch6 = Trecho(nome='S2CH6', n1=s2, n2=ch6, condutor=cond_1, comprimento=0.01)
+
+    ch6_d1 = Trecho(nome='CH6D1', n1=ch6, n2=d1, condutor=cond_1, comprimento=1.0)
+    d1_d2 = Trecho(nome='D1D2', n1=d1, n2=d2, condutor=cond_1, comprimento=1.0)
+    d1_d3 = Trecho(nome='D1D3', n1=d1, n2=d3, condutor=cond_1, comprimento=1.0)
+    d1_ch7 = Trecho(nome='D1CH7', n1=d1, n2=ch7, condutor=cond_1, comprimento=0.5)
+
+    ch7_e1 = Trecho(nome='CH7E1', n1=ch7, n2=e1, condutor=cond_1, comprimento=0.5)
+    e1_e2 = Trecho(nome='E1E2', n1=e1, n2=e2, condutor=cond_1, comprimento=1.0)
+    e2_ch4 = Trecho(nome='E2CH4', n1=e2, n2=ch4, condutor=cond_1, comprimento=0.5)
+    e1_e3 = Trecho(nome='E1E3', n1=e1, n2=e3, condutor=cond_1, comprimento=1.0)
+    e3_ch8 = Trecho(nome='E3CH8', n1=e3, n2=ch8, condutor=cond_1, comprimento=0.5)
+
 
     # Setor S1
     st1 = Setor(nome='S1',
@@ -603,11 +658,21 @@ if __name__ == '__main__':
     # Alimentador 1 de S1
     sub_1_al_1 = Alimentador(nome='S1_AL1',
                              setores=[st1, stA, stB, stC],
+                             trechos=[s1_ch1, ch1_a2, a2_a1,
+                                      a2_a3, a2_ch3, ch3_c1,
+                                      c1_c2, c1_c3, c3_ch5,
+                                      c3_ch8, a3_ch2, ch2_b1,
+                                      b1_b2, b2_ch4, b2_b3,
+                                      b3_ch5],
                              chaves=[ch1, ch2, ch3, ch4, ch5, ch8])
 
     # Alimentador 1 de S2
     sub_2_al_1 = Alimentador(nome='S2_AL1',
                              setores=[st2, stD, stE],
+                             trechos=[s2_ch6, ch6_d1, d1_d2,
+                                      d1_d3, d1_ch7, ch7_e1,
+                                      e1_e2, e2_ch4, e1_e3,
+                                      e3_ch8],
                              chaves=[ch6, ch7, ch4, ch8])
 
     t1 = Transformador(nome='S1_T1',
@@ -648,9 +713,9 @@ if __name__ == '__main__':
     # print setor.rnp
 
     # imprime as rnp dos setores de S2
-    #for setor in _sub_2.setores.values():
-    #    print 'setor: ', setor.nome
-    #    print setor.rnp
+    # for setor in _sub_2.setores.values():
+    # print 'setor: ', setor.nome
+    # print setor.rnp
 
     #_subestacoes['S1'].gera_trechos_da_rede()
 
