@@ -1,8 +1,8 @@
 # coding=utf-8
-from numpy import size, array, mat
+from numpy import size
 from random import randint
-
 from rnp import Arvore, Aresta
+from util import Fasor
 
 
 class Setor(Arvore):
@@ -49,17 +49,21 @@ class Setor(Arvore):
 
 
 class NoDeCarga(object):
-    def __init__(self, nome, vizinhos, potencia, chaves=None):
+    def __init__(self,
+                 nome,
+                 vizinhos,
+                 potencia=Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia),
+                 tensao=Fasor(real=0.0, imag=0.0, tipo=Fasor.Tensao),
+                 chaves=None):
         assert isinstance(nome, str), 'O parâmetro nome da classe NoDeCarga' \
                                       ' deve ser do tipo string'
         assert isinstance(vizinhos, list), 'O parâmetro vizinhos da classe' \
                                            ' Barra deve ser do tipo string'
-        assert isinstance(potencia, complex), 'O parâmetro potência da classe' \
-                                              'NoDeCarga deve ser do tipo complex'
 
         self.nome = nome
-        self.potencia = potencia
         self.vizinhos = vizinhos
+        self.potencia = potencia
+        self.tensao = tensao
         if chaves is not None:
             assert isinstance(chaves, list), 'O parâmetro chaves da classe NoDeCarga' \
                                              ' deve ser do tipo list'
@@ -259,7 +263,6 @@ class Alimentador(Arvore):
         _arvore_da_rede = self._gera_arvore_da_rede()
         self.arvore = _arvore_da_rede
 
-
     def gerar_trechos_da_rede(self):
 
         self.trechos = dict()
@@ -319,9 +322,11 @@ class Alimentador(Arvore):
                                                      n2=self.nos_de_carga[n_2])
 
     def calcular_potencia(self):
-        potencia = 0.0 + 0.0j
+        potencia = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
         for no in self.nos_de_carga.values():
-            potencia += no.potencia
+            potencia = potencia + no.potencia
+
+        return potencia
 
     def podar(self, no, alterar_rnp=False):
         poda = super(Alimentador, self).podar(no, alterar_rnp)
@@ -463,10 +468,10 @@ class Chave(Aresta):
 class Transformador(object):
     def __init__(self, nome, tensao_primario, tensao_secundario, potencia, impedancia):
         assert isinstance(nome, str), 'O parâmetro nome deve ser do tipo str'
-        assert isinstance(tensao_secundario, float), 'O parâmetro tensao_secundario deve ser do tipo float'
-        assert isinstance(tensao_primario, float), 'O parâmetro tensao_primario deve ser do tipo float'
-        assert isinstance(potencia, float), 'O parâmetro potencia deve ser do tipo float'
-        assert isinstance(impedancia, complex), 'O parâmetro impedancia deve ser do tipo complex'
+        assert isinstance(tensao_secundario, Fasor), 'O parâmetro tensao_secundario deve ser do tipo Fasor'
+        assert isinstance(tensao_primario, Fasor), 'O parâmetro tensao_primario deve ser do tipo Fasor'
+        assert isinstance(potencia, Fasor), 'O parâmetro potencia deve ser do tipo Fasor'
+        assert isinstance(impedancia, Fasor), 'O parâmetro impedancia deve ser do tipo Fasor'
 
         self.nome = nome
         self.tensao_primario = tensao_primario
@@ -537,25 +542,72 @@ if __name__ == '__main__':
     ch7 = Chave(nome='7', estado=1)
 
     # Nos de carga do alimentador S1_AL1
-    s1 = NoDeCarga(nome='S1', vizinhos=['A2'], potencia=0.0 + 0.0j, chaves=['1'])
-    a1 = NoDeCarga(nome='A1', vizinhos=['A2'], potencia=160 + 120j)
-    a2 = NoDeCarga(nome='A2', vizinhos=['S1', 'A1', 'A3', 'C1'], potencia=150 + 110j, chaves=['1', '3'])
-    a3 = NoDeCarga(nome='A3', vizinhos=['A2', 'B1'], potencia=100 + 80j, chaves=['2'])
-    b1 = NoDeCarga(nome='B1', vizinhos=['B2', 'A3'], potencia=200 + 140j, chaves=['2'])
-    b2 = NoDeCarga(nome='B2', vizinhos=['B1', 'B3', 'E2'], potencia=150 + 110j, chaves=['4'])
-    b3 = NoDeCarga(nome='B3', vizinhos=['B2', 'C3'], potencia=100 + 80j, chaves=['5'])
-    c1 = NoDeCarga(nome='C1', vizinhos=['C2', 'C3', 'A2'], potencia=200 + 140j, chaves=['3'])
-    c2 = NoDeCarga(nome='C2', vizinhos=['C1'], potencia=150 + 110j)
-    c3 = NoDeCarga(nome='C3', vizinhos=['C1', 'E3', 'B3'], potencia=100 + 80j, chaves=['5', '8'])
+    s1 = NoDeCarga(nome='S1',
+                   vizinhos=['A2'],
+                   potencia=Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia),
+                   chaves=['1'])
+    a1 = NoDeCarga(nome='A1',
+                   vizinhos=['A2'],
+                   potencia=Fasor(real=160.0e3, imag=120.0e3, tipo=Fasor.Potencia))
+    a2 = NoDeCarga(nome='A2',
+                   vizinhos=['S1', 'A1', 'A3', 'C1'],
+                   potencia=Fasor(real=150.0e3, imag=110.0e3, tipo=Fasor.Potencia),
+                   chaves=['1', '3'])
+    a3 = NoDeCarga(nome='A3',
+                   vizinhos=['A2', 'B1'],
+                   potencia=Fasor(real=100.0e3, imag=80.0e3, tipo=Fasor.Potencia),
+                   chaves=['2'])
+    b1 = NoDeCarga(nome='B1',
+                   vizinhos=['B2', 'A3'],
+                   potencia=Fasor(real=200.0e3, imag=140.0e3, tipo=Fasor.Potencia),
+                   chaves=['2'])
+    b2 = NoDeCarga(nome='B2',
+                   vizinhos=['B1', 'B3', 'E2'],
+                   potencia=Fasor(real=150.0e3, imag=110.0e3, tipo=Fasor.Potencia),
+                   chaves=['4'])
+    b3 = NoDeCarga(nome='B3',
+                   vizinhos=['B2', 'C3'],
+                   potencia=Fasor(real=100.0e3, imag=80.0e3, tipo=Fasor.Potencia),
+                   chaves=['5'])
+    c1 = NoDeCarga(nome='C1',
+                   vizinhos=['C2', 'C3', 'A2'],
+                   potencia=Fasor(real=200.0e3, imag=140.0e3, tipo=Fasor.Potencia),
+                   chaves=['3'])
+    c2 = NoDeCarga(nome='C2',
+                   vizinhos=['C1'],
+                   potencia=Fasor(real=150.0e3, imag=110.0e3, tipo=Fasor.Potencia))
+    c3 = NoDeCarga(nome='C3',
+                   vizinhos=['C1', 'E3', 'B3'],
+                   potencia=Fasor(real=100.0e3, imag=80.0e3, tipo=Fasor.Potencia),
+                   chaves=['5', '8'])
 
     # Nos de carga do alimentador S2_AL1
-    s2 = NoDeCarga(nome='S2', vizinhos=['D1'], potencia=0.0 + 0.0j, chaves=['6'])
-    d1 = NoDeCarga(nome='D1', vizinhos=['S2', 'D2', 'D3', 'E1'], potencia=200 + 160j, chaves=['6', '7'])
-    d2 = NoDeCarga(nome='D2', vizinhos=['D1'], potencia=90 + 40j)
-    d3 = NoDeCarga(nome='D3', vizinhos=['D1'], potencia=100 + 80j)
-    e1 = NoDeCarga(nome='E1', vizinhos=['E3', 'E2', 'D1'], potencia=100 + 40j, chaves=['7'])
-    e2 = NoDeCarga(nome='E2', vizinhos=['E1', 'B2'], potencia=110 + 70j, chaves=['4'])
-    e3 = NoDeCarga(nome='E3', vizinhos=['E1', 'C3'], potencia=150 + 80j, chaves=['8'])
+    s2 = NoDeCarga(nome='S2',
+                   vizinhos=['D1'],
+                   potencia=Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia),
+                   chaves=['6'])
+    d1 = NoDeCarga(nome='D1',
+                   vizinhos=['S2', 'D2', 'D3', 'E1'],
+                   potencia=Fasor(real=200.0e3, imag=160.0e3, tipo=Fasor.Potencia),
+                   chaves=['6', '7'])
+    d2 = NoDeCarga(nome='D2',
+                   vizinhos=['D1'],
+                   potencia=Fasor(real=90.0e3, imag=40.0e3, tipo=Fasor.Potencia))
+    d3 = NoDeCarga(nome='D3',
+                   vizinhos=['D1'],
+                   potencia=Fasor(real=100.0e3, imag=80.0e3, tipo=Fasor.Potencia))
+    e1 = NoDeCarga(nome='E1',
+                   vizinhos=['E3', 'E2', 'D1'],
+                   potencia=Fasor(real=100.0e3, imag=40.0e3, tipo=Fasor.Potencia),
+                   chaves=['7'])
+    e2 = NoDeCarga(nome='E2',
+                   vizinhos=['E1', 'B2'],
+                   potencia=Fasor(real=110.0e3, imag=70.0e3, tipo=Fasor.Potencia),
+                   chaves=['4'])
+    e3 = NoDeCarga(nome='E3',
+                   vizinhos=['E1', 'C3'],
+                   potencia=Fasor(real=150.0e3, imag=80.0e3, tipo=Fasor.Potencia),
+                   chaves=['8'])
 
     cond_1 = Condutor(nome='CAA 266R', rp=0.2391, xp=0.37895, rz=0.41693, xz=1.55591, ampacidade=301)
 
@@ -676,16 +728,16 @@ if __name__ == '__main__':
                              chaves=[ch6, ch7, ch4, ch8])
 
     t1 = Transformador(nome='S1_T1',
-                       tensao_primario=69e3,
-                       tensao_secundario=13.8e3,
-                       potencia=10e6,
-                       impedancia=0.5 + 0.2j)
+                       tensao_primario=Fasor(mod=69e3, ang=0.0, tipo=Fasor.Tensao),
+                       tensao_secundario=Fasor(mod=13.8e3, ang=0.0, tipo=Fasor.Tensao),
+                       potencia=Fasor(mod=10e6, ang=0.0, tipo=Fasor.Potencia),
+                       impedancia=Fasor(real=0.5, imag=0.2, tipo=Fasor.Impedancia))
 
     t2 = Transformador(nome='S2_T1',
-                       tensao_primario=69e3,
-                       tensao_secundario=13.8e3,
-                       potencia=10e6,
-                       impedancia=0.5 + 0.2j)
+                       tensao_primario=Fasor(mod=69e3, ang=0.0, tipo=Fasor.Tensao),
+                       tensao_secundario=Fasor(mod=13.8e3, ang=0.0, tipo=Fasor.Tensao),
+                       potencia=Fasor(mod=10e6, ang=0.0, tipo=Fasor.Potencia),
+                       impedancia=Fasor(real=0.5, imag=0.2, tipo=Fasor.Impedancia))
 
     sub_1 = Subestacao(nome='S1', alimentadores=[sub_1_al_1], transformadores=[t1])
 
@@ -700,8 +752,8 @@ if __name__ == '__main__':
     sub_2_al_1.gerar_arvore_nos_de_carga()
 
 
-
-    # Imprime a representação de todos os setores da subestção na representação
+    # Imprime a representação de todos os setores da subestção 
+    # na representação
     # nó profundidade
     # print sub1.rnp
 
@@ -717,8 +769,8 @@ if __name__ == '__main__':
     # print 'setor: ', setor.nome
     # print setor.rnp
 
-    #_subestacoes['S1'].gera_trechos_da_rede()
+    # _subestacoes['S1'].gera_trechos_da_rede()
 
     # imprime os trechos da rede S1
-    #for trecho in _sub_1.trechos.values():
+    # for trecho in _sub_1.trechos.values():
     #    print trecho
