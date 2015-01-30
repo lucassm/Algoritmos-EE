@@ -44,6 +44,14 @@ class Setor(Arvore):
 
         return arvore_do_setor
 
+    def calcular_potencia(self):
+
+        potencia = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
+        for no in self.nos_de_carga.values():
+            potencia = potencia + no.potencia
+
+        return potencia
+
     def __str__(self):
         return 'Setor: ' + self.nome
 
@@ -98,7 +106,7 @@ class Subestacao(object):
 
 
 class Trecho(Aresta):
-    def __init__(self, nome, n1, n2, condutor=None, comprimento=None):
+    def __init__(self, nome, n1, n2, fluxo=None, condutor=None, comprimento=None):
         assert isinstance(nome, str), 'O parâmetro nome da classe Trecho ' \
                                       'deve ser do tipo str'
         assert isinstance(n1, NoDeCarga) or isinstance(n1, Chave), 'O parâmetro n1 da classe Trecho ' \
@@ -107,11 +115,15 @@ class Trecho(Aresta):
         assert isinstance(n2, NoDeCarga) or isinstance(n2, Chave), 'O parâmetro n2 da classe Trecho ' \
                                                                    'deve ser do tipo No de carga ' \
                                                                    'ou do tipo Chave'
+
         super(Trecho, self).__init__(nome)
         self.n1 = n1
         self.n2 = n2
         self.condutor = condutor
         self.comprimento = comprimento
+
+        if fluxo is None:
+            self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
 
     def __str__(self):
         return 'Trecho: %s' % self.nome
