@@ -125,7 +125,7 @@ class Trecho(Aresta):
         if fluxo is None:
             self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
 
-    def __str__(self):
+    def __repr__(self):
         return 'Trecho: %s' % self.nome
 
 

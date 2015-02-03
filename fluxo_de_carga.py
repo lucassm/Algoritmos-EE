@@ -27,19 +27,22 @@ def busca_ramos_nos(alimentador):
     return ramos
 
 
-def busca_trechos(alimentador):
-    ramos = busca_ramos_nos(alimentador)
+def busca_ramos_trechos(alimentador):
+    ramos_nos = busca_ramos_nos(alimentador)
+    ramos_trechos = list()
+
     # for percorre os ramos do alimentador
-    for ramo in ramos:
-        j = ramo[0]
+    for ramo_nos in ramos_nos:
+        j = ramo_nos[0]
+        ramo_trechos = list()
 
         # for pecorre os nos de carga do alimentador
-        for i in ramo[1:]:
+        for i in ramo_nos[1:]:
             #print j, i
 
             # cria conjuntos das chaves ligadas ao no
-            chaves_n1 = set(j.chaves)
-            chaves_n2 = set(i.chaves)
+            chaves_n1 = set(alimentador.nos_de_carga[j].chaves)
+            chaves_n2 = set(alimentador.nos_de_carga[i].chaves)
 
             # verifica se existem chaves comuns aos nos
             chaves_intersec = chaves_n1.intersection(chaves_n2)
@@ -47,19 +50,40 @@ def busca_trechos(alimentador):
             if chaves_intersec != set():
                 # verifica quais trechos estão ligados a chave
                 # comum aos nos i e j
-                pass
+                chave = chaves_intersec.pop()
+                trechos_ch = []
+                for trecho in alimentador.trechos.values():
+                    if trecho.n1.nome == chave:
+                        if trecho.n2.nome == i or trecho.n2.nome == j:
+                            trechos_ch.append(trecho)
+                    elif trecho.n2.nome == chave:
+                        if trecho.n1.nome == i or trecho.n1.nome == j:
+                            trechos_ch.append(trecho)
+
+                if len(trechos_ch) == 2:
+                    if trechos_ch[0].n1.nome == alimentador.nos_de_carga[j].nome or trechos_ch[0].n2.nome == alimentador.nos_de_carga[j].nome:
+                        ramo_trechos.append(trechos_ch[0])
+                        ramo_trechos.append(trechos_ch[1])
+                    else:
+                        ramo_trechos.append(trechos_ch[1])
+                        ramo_trechos.append(trechos_ch[0])
+
             else:
                 # se não existirem chaves comuns, verifica qual trecho
                 # tem os nos i e j como extremidade
                 for trecho in alimentador.trechos.values():
                     if trecho.n1.nome == j:
                         if trecho.n2.nome == i:
-                            print trecho.nome
+                            ramo_trechos.append(trecho)
                     elif trecho.n1.nome == i:
                         if trecho.n2.nome == j:
-                            print trecho.nome
+                            ramo_trechos.append(trecho)
 
             j = i
+
+        ramos_trechos.append(ramo_trechos)
+
+    return ramos_trechos
 
 
 if __name__ == '__main__':
