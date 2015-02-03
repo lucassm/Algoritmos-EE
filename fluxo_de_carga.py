@@ -27,6 +27,41 @@ def busca_ramos_nos(alimentador):
     return ramos
 
 
+def busca_trechos(alimentador):
+    ramos = busca_ramos_nos(alimentador)
+    # for percorre os ramos do alimentador
+    for ramo in ramos:
+        j = ramo[0]
+
+        # for pecorre os nos de carga do alimentador
+        for i in ramo[1:]:
+            #print j, i
+
+            # cria conjuntos das chaves ligadas ao no
+            chaves_n1 = set(j.chaves)
+            chaves_n2 = set(i.chaves)
+
+            # verifica se existem chaves comuns aos nos
+            chaves_intersec = chaves_n1.intersection(chaves_n2)
+
+            if chaves_intersec != set():
+                # verifica quais trechos estão ligados a chave
+                # comum aos nos i e j
+                pass
+            else:
+                # se não existirem chaves comuns, verifica qual trecho
+                # tem os nos i e j como extremidade
+                for trecho in alimentador.trechos.values():
+                    if trecho.n1.nome == j:
+                        if trecho.n2.nome == i:
+                            print trecho.nome
+                    elif trecho.n1.nome == i:
+                        if trecho.n2.nome == j:
+                            print trecho.nome
+
+            j = i
+
+
 if __name__ == '__main__':
     ch1 = Chave(nome='1', estado=1)
     ch2 = Chave(nome='2', estado=1)
