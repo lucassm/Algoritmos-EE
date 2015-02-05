@@ -43,13 +43,13 @@ class Fasor(object):
     @property
     def tipo(self):
         if self.__tipo == 0:
-            return 'Tensão'
+            return 'Tensao'
         elif self.__tipo == 1:
             return 'Corrente'
         elif self.__tipo == 2:
             return 'Impedancia'
         elif self.__tipo == 3:
-            return 'Potência'
+            return 'Potencia'
 
     @tipo.setter
     def tipo(self, valor):

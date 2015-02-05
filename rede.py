@@ -71,6 +71,7 @@ class NoDeCarga(object):
         self.nome = nome
         self.vizinhos = vizinhos
         self.potencia = potencia
+        self.potenca_eq = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
         self.tensao = tensao
         if chaves is not None:
             assert isinstance(chaves, list), 'O parâmetro chaves da classe NoDeCarga' \
@@ -119,11 +120,16 @@ class Trecho(Aresta):
         super(Trecho, self).__init__(nome)
         self.n1 = n1
         self.n2 = n2
+        self.no_montante = None
+        self.no_jusante = None
         self.condutor = condutor
         self.comprimento = comprimento
 
-        if fluxo is None:
-            self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
+        #if fluxo is None:
+        #    self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
+
+    def calcula_impedancia(self):
+        return self.comprimento * self.condutor.rp, self.comprimento * self.condutor.xp
 
     def __repr__(self):
         return 'Trecho: %s' % self.nome
