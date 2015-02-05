@@ -71,7 +71,7 @@ class NoDeCarga(object):
         self.nome = nome
         self.vizinhos = vizinhos
         self.potencia = potencia
-        self.potenca_eq = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
+        self.potencia_eq = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
         self.tensao = tensao
         if chaves is not None:
             assert isinstance(chaves, list), 'O parâmetro chaves da classe NoDeCarga' \

@@ -30,23 +30,14 @@ def busca_ramos_nos(alimentador):
     return ramos
 
 
-def busca_ramos_trechos(alimentador):
-    ramos_nos = busca_ramos_nos(alimentador)
-    ramos_trechos = list()
-
-    # for percorre os ramos do alimentador
-    for ramo_nos in ramos_nos:
-        ramo_nos = [no.nome for no in ramo_nos]
-        j = ramo_nos[0]
-        ramo_trechos = list()
+def busca_trecho(alimentador, n1, n2):
 
         # for pecorre os nos de carga do alimentador
-        for i in ramo_nos[1:]:
-            # print j, i
+        for no in alimentador.nos_de_carga.keys():
 
             # cria conjuntos das chaves ligadas ao no
-            chaves_n1 = set(alimentador.nos_de_carga[j].chaves)
-            chaves_n2 = set(alimentador.nos_de_carga[i].chaves)
+            chaves_n1 = set(alimentador.nos_de_carga[n1].chaves)
+            chaves_n2 = set(alimentador.nos_de_carga[n2].chaves)
 
             # verifica se existem chaves comuns aos nos
             chaves_intersec = chaves_n1.intersection(chaves_n2)
@@ -58,72 +49,24 @@ def busca_ramos_trechos(alimentador):
                 trechos_ch = []
                 for trecho in alimentador.trechos.values():
                     if trecho.n1.nome == chave:
-                        if trecho.n2.nome == i or trecho.n2.nome == j:
+                        if trecho.n2.nome == n1 or trecho.n2.nome == n2:
                             trechos_ch.append(trecho)
                     elif trecho.n2.nome == chave:
-                        if trecho.n1.nome == i or trecho.n1.nome == j:
+                        if trecho.n1.nome == n1 or trecho.n1.nome == n2:
                             trechos_ch.append(trecho)
 
                 if len(trechos_ch) == 2:
-                    if trechos_ch[0].n1.nome == alimentador.nos_de_carga[j].nome or trechos_ch[0].n2.nome == \
-                            alimentador.nos_de_carga[j].nome:
-                        # classifica os nos associados ao trecho como jusante ou montante
-                        if isinstance(trechos_ch[0].n1, Chave):
-                            trechos_ch[0].no_jusante = trechos_ch[0].n1
-                            trechos_ch[0].no_montante = trechos_ch[0].n2
-                        else:
-                            trechos_ch[0].no_jusante = trechos_ch[0].n2
-                            trechos_ch[0].no_montante = trechos_ch[0].n1
-
-                        if isinstance(trechos_ch[1].n1, Chave):
-                            trechos_ch[1].no_jusante = trechos_ch[1].n1
-                            trechos_ch[1].no_montante = trechos_ch[1].n2
-                        else:
-                            trechos_ch[1].no_jusante = trechos_ch[1].n2
-                            trechos_ch[1].no_montante = trechos_ch[1].n1
-
-                        ramo_trechos.append(trechos_ch[0])
-                        ramo_trechos.append(trechos_ch[1])
-                    else:
-
-                        # classifica os nos associados ao trecho como jusante ou montante
-                        if isinstance(trechos_ch[1].n1, Chave):
-                            trechos_ch[1].no_jusante = trechos_ch[1].n1
-                            trechos_ch[1].no_montante = trechos_ch[1].n2
-                        else:
-                            trechos_ch[1].no_jusante = trechos_ch[1].n2
-                            trechos_ch[1].no_montante = trechos_ch[1].n1
-
-                        if isinstance(trechos_ch[0].n1, Chave):
-                            trechos_ch[0].no_jusante = trechos_ch[0].n1
-                            trechos_ch[0].no_montante = trechos_ch[0].n2
-                        else:
-                            trechos_ch[0].no_jusante = trechos_ch[0].n2
-                            trechos_ch[0].no_montante = trechos_ch[0].n1
-
-                        ramo_trechos.append(trechos_ch[1])
-                        ramo_trechos.append(trechos_ch[0])
-
+                    return trechos_ch
             else:
                 # se não existirem chaves comuns, verifica qual trecho
                 # tem os nos i e j como extremidade
                 for trecho in alimentador.trechos.values():
-                    if trecho.n1.nome == j:
-                        if trecho.n2.nome == i:
-                            trecho.no_jusante = trecho.n1
-                            trecho.no_montante = trecho.n2
-                            ramo_trechos.append(trecho)
-                    elif trecho.n1.nome == i:
-                        if trecho.n2.nome == j:
-                            trecho.no_jusante = trecho.n2
-                            trecho.no_montante = trecho.n1
-                            ramo_trechos.append(trecho)
-
-            j = i
-
-        ramos_trechos.append(ramo_trechos)
-
-    return ramos_trechos
+                    if trecho.n1.nome == n1:
+                        if trecho.n2.nome == n2:
+                            return trecho
+                    elif trecho.n1.nome == n2:
+                        if trecho.n2.nome == n1:
+                            return trecho
 
 
 def calcula_impedancia(alimentador):
@@ -199,26 +142,47 @@ def calcula_fluxo(alimentador):
                 no_max = no_prof[1]
                 prof_max = int(no_prof[0])
 
-    nos = [alimentador.nos_de_carga[no_prof[1]] for no_prof in rnp_alimentador.transpose() if int(no_prof[0]) == 2]
+    while prof_max >= 0:
+        nos = [alimentador.nos_de_carga[no_prof[1]] for no_prof in rnp_alimentador.transpose() if int(no_prof[0]) == prof_max]
+        prof_max -= 1
 
-    for no in nos:
-        vizinhos = arvore_nos_de_carga[no.nome]
+        for no in nos:
+            print no
+            vizinhos = arvore_nos_de_carga[no.nome]
 
-        no_prof = [no_prof for no_prof in rnp_alimentador.transpose() if no_prof[1] == no.nome]
-        vizinhos_jusante = list()
+            no_prof = [no_prof for no_prof in rnp_alimentador.transpose() if no_prof[1] == no.nome]
+            vizinhos_jusante = list()
 
-        for vizinho in vizinhos:
-            pass
-            vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose() if viz_prof[1] == vizinho]
-            if int(vizinho_prof[0][0]) > int(no_prof[0][0]):
-                vizinhos_jusante.append(alimentador.nos_de_carga[vizinho_prof[0][1]])
+            for vizinho in vizinhos:
+                pass
+                vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose() if viz_prof[1] == vizinho]
+                if int(vizinho_prof[0][0]) > int(no_prof[0][0]):
+                    vizinhos_jusante.append(alimentador.nos_de_carga[vizinho_prof[0][1]])
 
-        if vizinhos_jusante == []:
-            no.potencia_eq = no.potencia
-        else:
-            for no_jus in vizinhos_jusante:
-                no.potencia_eq.real = no.potencia_eq.real + no.potencia_eq
+            if vizinhos_jusante == []:
+                no.potencia_eq.real += no.potencia.real
+                no.potencia_eq.imag += no.potencia.imag
+            else:
+                no.potencia_eq.real += no.potencia.real
+                no.potencia_eq.imag += no.potencia.imag
 
+                for no_jus in vizinhos_jusante:
+                    no.potencia_eq.real += no_jus.potencia_eq.real
+                    no.potencia_eq.imag += no_jus.potencia_eq.imag
+
+                    trecho = busca_trecho(alimentador, no.nome, no_jus.nome)
+                    if not isinstance(trecho, Trecho):
+
+                        r1, x1 = trecho[0].calcula_impedancia()
+                        r2, x2 = trecho[1].calcula_impedancia()
+                        r, x = r1 + r2, x1 + x2
+
+                        no.potencia_eq.real += r*(no_jus.potencia_eq.mod**2)/no_jus.tensao.mod**2
+                        no.potencia_eq.imag += x*(no_jus.potencia_eq.mod**2)/no_jus.tensao.mod**2
+                    else:
+                        r, x = trecho.calcula_impedancia()
+                        no.potencia_eq.real += r*(no_jus.potencia_eq.mod**2)/no_jus.tensao.mod**2
+                        no.potencia_eq.imag += x*(no_jus.potencia_eq.mod**2)/no_jus.tensao.mod**2
 
 
 if __name__ == '__main__':
