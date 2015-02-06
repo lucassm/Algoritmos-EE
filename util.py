@@ -34,7 +34,7 @@ class Fasor(object):
                 self.__mod = mod
                 self.__ang = ang
                 self.__real = self.__mod * np.cos(np.pi / 180.0 * self.__ang)
-                self.__imag = self.__mod * np.sin(np.pi * 180.0 * self.__ang)
+                self.__imag = self.__mod * np.sin(np.pi / 180.0 * self.__ang)
             else:
                 raise Exception('O parâmetro ang esta vazio!')
         else:
@@ -112,9 +112,9 @@ class Fasor(object):
 
     @mod.setter
     def mod(self, valor):
-        self.__mod = valor
+        self.__mod = abs(valor)
         self.__real = self.__mod * np.cos(np.pi / 180.0 * self.__ang)
-        self.__imag = self.__mod * np.sin(np.pi * 180.0 * self.__ang)
+        self.__imag = self.__mod * np.sin(np.pi / 180.0 * self.__ang)
 
     @property
     def ang(self):
@@ -124,7 +124,7 @@ class Fasor(object):
     def ang(self, valor):
         self.__ang = valor
         self.__real = self.__mod * np.cos(np.pi / 180.0 * self.__ang)
-        self.__imag = self.__mod * np.sin(np.pi * 180.0 * self.__ang)
+        self.__imag = self.__mod * np.sin(np.pi / 180.0 * self.__ang)
 
     def __add__(self, other):
         if not isinstance(other, Fasor):
