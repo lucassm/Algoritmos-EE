@@ -125,8 +125,10 @@ class Trecho(Aresta):
         self.condutor = condutor
         self.comprimento = comprimento
 
-        #if fluxo is None:
-        #    self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Potencia)
+        if fluxo is None:
+            self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Corrente)
+        else:
+            self.fluxo = fluxo
 
     def calcula_impedancia(self):
         return self.comprimento * self.condutor.rp, self.comprimento * self.condutor.xp

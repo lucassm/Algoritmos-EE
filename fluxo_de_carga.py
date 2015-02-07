@@ -137,8 +137,13 @@ def varrer_alimentador(alimentador):
                 r, x = trecho.calcula_impedancia()
 
             v_mon = no_mon.tensao.mod
-            p = no_mon.potencia_eq.real
-            q = no_mon.potencia_eq.imag
+
+            p = no.potencia_eq.real
+            q = no.potencia_eq.imag
+
+            # parcela de perdas
+            p += r * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
+            q += x * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
 
             v_jus = v_mon**2 - 2*(r*p + x*q) + (r**2 + x**2)*(p**2 + q**2)/v_mon**2
             v_jus = np.sqrt(v_jus)
@@ -151,6 +156,21 @@ def varrer_alimentador(alimentador):
             no.tensao.mod = v_jus
             no.tensao.ang = ang * 180.0/np.pi
 
+            # calcula o fluxo de corrente passante no trecho
+            corrente = no.tensao.real - no_mon.tensao.real
+            corrente += (no.tensao.imag - no_mon.tensao.imag)*1.0j
+            corrente /= r + x * 1.0j
+            if not isinstance(trecho, Trecho):
+                trecho[0].fluxo = Fasor(real=corrente.real,
+                                        imag=corrente.imag,
+                                        tipo=Fasor.Corrente)
+                trecho[1].fluxo = Fasor(real=corrente.real,
+                                        imag=corrente.imag,
+                                        tipo=Fasor.Corrente)
+            else:
+                trecho.fluxo = Fasor(real=corrente.real,
+                                     imag=corrente.imag,
+                                     tipo=Fasor.Corrente)
         prof += 1
 
 
