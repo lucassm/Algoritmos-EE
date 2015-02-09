@@ -4,6 +4,8 @@ import numpy as np
 
 
 def busca_trecho(alimentador, n1, n2):
+    """Função que busca trechos em um alimendador entre os nós/chaves
+      n1 e n2"""
     # for pecorre os nos de carga do alimentador
     for no in alimentador.nos_de_carga.keys():
 
@@ -16,9 +18,10 @@ def busca_trecho(alimentador, n1, n2):
 
         if chaves_intersec != set():
             # verifica quais trechos estão ligados a chave
-            # comum aos nos i e j
+            # comum as nós.
             chave = chaves_intersec.pop()
             trechos_ch = []
+            # identificação dos trechos requeridos    
             for trecho in alimentador.trechos.values():
                 if trecho.n1.nome == chave:
                     if trecho.n2.nome == n1 or trecho.n2.nome == n2:
@@ -26,12 +29,13 @@ def busca_trecho(alimentador, n1, n2):
                 elif trecho.n2.nome == chave:
                     if trecho.n1.nome == n1 or trecho.n1.nome == n2:
                         trechos_ch.append(trecho)
-
+            # caso o comprimento da lista seja dois, ou seja, há chave
+            # entre dois ós de carga, a função retorna os trechos.
             if len(trechos_ch) == 2:
                 return trechos_ch
         else:
             # se não existirem chaves comuns, verifica qual trecho
-            # tem os nos i e j como extremidade
+            # tem os nos n1 e n2 como extremidade
             for trecho in alimentador.trechos.values():
                 if trecho.n1.nome == n1:
                     if trecho.n2.nome == n2:
@@ -42,6 +46,8 @@ def busca_trecho(alimentador, n1, n2):
 
 
 def atribuir_tensao_a_subestacao(subestacao, tensao):
+    """ Função que atribui tensão à subestação
+     e a define para todos os nós de carga"""
     for alimentador in subestacao.alimentadores.values():
         for no in alimentador.nos_de_carga.values():
             no.tensao = Fasor(real=tensao.real,
@@ -129,50 +135,56 @@ def varrer_alimentador(alimentador):
             else:
                 no.potencia_eq.real += no.potencia.real
                 no.potencia_eq.imag += no.potencia.imag
-
+                # soma a potência do nó à jusante com a potência do nó atual
                 for no_jus in vizinhos_jusante:
                     no.potencia_eq.real += no_jus.potencia_eq.real
                     no.potencia_eq.imag += no_jus.potencia_eq.imag
-
+                    # chama a função busca_trecho para definir
+                    # quais trechos estão entre o nó atual e o nó a jusante.
                     trecho = busca_trecho(alimentador, no.nome, no_jus.nome)
+                    # se o trecho não for uma instancia da classe
+                    # Trecho(quando há chave entre nós de cargas)
+                    # a impedância é calculada
                     if not isinstance(trecho, Trecho):
 
                         r1, x1 = trecho[0].calcula_impedancia()
                         r2, x2 = trecho[1].calcula_impedancia()
                         r, x = r1 + r2, x1 + x2
-
+                    # se o trecho atualfor uma instancia da classe trecho
                     else:
                         r, x = trecho.calcula_impedancia()
-
+                        # calculo das potências dos nós de carga a jusante.
                     no.potencia_eq.real += r * (no_jus.potencia_eq.mod ** 2) / no_jus.tensao.mod ** 2
                     no.potencia_eq.imag += x * (no_jus.potencia_eq.mod ** 2) / no_jus.tensao.mod ** 2
 
     prof = 0
-
+    # seção do cálculo de atualização das tensões
     while prof <= prof_max:
+        # salva os nós de carga a montante
         nos = [alimentador.nos_de_carga[no_prof[1]] for no_prof in rnp_alimentador.transpose() if
                int(no_prof[0]) == prof + 1]
-
+        # percorre os nós para guardar a árvore do nó requerido
         for no in nos:
             vizinhos = arvore_nos_de_carga[no.nome]
-
+            # guarda os pares (profundidade,nó)
             no_prof = [no_prof for no_prof in rnp_alimentador.transpose() if no_prof[1] == no.nome]
             vizinhos_montante = list()
-
+            # verifica quem é vizinho do nó desejado.
             for vizinho in vizinhos:
                 vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose() if viz_prof[1] == vizinho]
                 if int(vizinho_prof[0][0]) < int(no_prof[0][0]):
+                    # armazena os vizinhos a montante.
                     vizinhos_montante.append(alimentador.nos_de_carga[vizinho_prof[0][1]])
-
+            # armazena o primeiro vizinho a montante
             no_mon = vizinhos_montante[0]
             trecho = busca_trecho(alimentador, no.nome, no_mon.nome)
-
+            # se existir chave, soma a resistência dos dois trechos
             if not isinstance(trecho, Trecho):
 
                 r1, x1 = trecho[0].calcula_impedancia()
                 r2, x2 = trecho[1].calcula_impedancia()
                 r, x = r1 + r2, x1 + x2
-
+            # caso não exista, a resistência é a do próprio trecho
             else:
                 r, x = trecho.calcula_impedancia()
 
@@ -185,21 +197,23 @@ def varrer_alimentador(alimentador):
             p += r * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
             q += x * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
 
-            v_jus = v_mon**2 - 2*(r*p + x*q) + (r**2 + x**2)*(p**2 + q**2)/v_mon**2
+            v_jus = v_mon ** 2 - 2 * (r * p + x * q) + (r ** 2 + x ** 2) * (p ** 2 + q ** 2)/v_mon**2
             v_jus = np.sqrt(v_jus)
 
-            k1 = (p*x - q*r)/v_mon
-            k2 = v_mon - (p*r - q*x)/v_mon
+            k1 = (p * x - q * r) / v_mon
+            k2 = v_mon - (p * r - q * x) / v_mon
 
-            ang = no_mon.tensao.ang * np.pi/180.0 - np.arctan(k1/k2)
+            ang = no_mon.tensao.ang * np.pi / 180.0 - np.arctan(k1 / 2)
 
             no.tensao.mod = v_jus
-            no.tensao.ang = ang * 180.0/np.pi
+            no.tensao.ang = ang * 180.0 / np.pi
 
             # calcula o fluxo de corrente passante no trecho
             corrente = no.tensao.real - no_mon.tensao.real
-            corrente += (no.tensao.imag - no_mon.tensao.imag)*1.0j
+            corrente += (no.tensao.imag - no_mon.tensao.imag) * 1.0j
             corrente /= r + x * 1.0j
+            # se houver chaves, ou seja, há dois trechos a mesma corrente
+            # é atribuida
             if not isinstance(trecho, Trecho):
                 trecho[0].fluxo = Fasor(real=corrente.real,
                                         imag=corrente.imag,
