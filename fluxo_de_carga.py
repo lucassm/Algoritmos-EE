@@ -50,39 +50,79 @@ def atribuir_tensao_a_subestacao(subestacao, tensao):
 
 
 def varrer_alimentador(alimentador):
+    """ Função que varre os alimentadores pelo
+    método varredura direta/inversa"""
+
+    # guarda os nós de carga na variável nos_alimentador
     nos_alimentador = alimentador.nos_de_carga.values()
+
+    # guarda a rnp dos nós de carga na variável rnp_alimentador
     rnp_alimentador = alimentador.arvore_nos_de_carga.rnp
+
+    # guarda a árvore de cada nós de carga
     arvore_nos_de_carga = alimentador.arvore_nos_de_carga.arvore
+
+    # variáveis para o auxílio na determinação do nó mais profundo
     no_max, prof_max = None, 0
 
+    # for percorre a rnp dos nós de carga tomando valores
+    # em pares (profundidade, nó).
     for no_prof in rnp_alimentador.transpose():
+        # pega os nomes dos nós de carga.
         nos_alimentador_nomes = [no.nome for no in nos_alimentador]
 
+        # verifica se a profundidade do nó é maior do que a profundidade máxima
+        # e se ele está na lista de nós do alimentador.
         if int(no_prof[0]) > prof_max and no_prof[1] in nos_alimentador_nomes:
-            no_max = no_prof[1]
             prof_max = int(no_prof[0])
 
+    # prof recebe a profundidae máxima determinada
     prof = prof_max
 
+    # seção do cálculo das potências partindo dos
+    # nós com maiores profundidades até o nó raíz
     while prof >= 0:
-        nos = [alimentador.nos_de_carga[no_prof[1]] for no_prof in rnp_alimentador.transpose() if
+        # guarda os nós com maiores profundidades.
+        nos = [alimentador.nos_de_carga[no_prof[1]]
+               for no_prof in rnp_alimentador.transpose() if
                int(no_prof[0]) == prof]
+
+        # decrementodo da profundidade.
         prof -= 1
 
+        # for que percorre os nós com a profundidade
+        # armazenada na variável prof
         for no in nos:
+            # zera as potências para que na próxima
+            # iteração não ocorra acúmulo.
             no.potencia_eq.real = 0.0
             no.potencia_eq.imag = 0.0
 
+            # armazena a árvore do nó de carga
+            # armazenado na variável nó
             vizinhos = arvore_nos_de_carga[no.nome]
 
-            no_prof = [no_prof for no_prof in rnp_alimentador.transpose() if no_prof[1] == no.nome]
+            # guarda os pares (profundidade, nó)
+            no_prof = [no_prof for no_prof in rnp_alimentador.transpose()
+                       if no_prof[1] == no.nome]
             vizinhos_jusante = list()
 
+            # for que percorre a árvore de cada nó de carga
             for vizinho in vizinhos:
-                vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose() if viz_prof[1] == vizinho]
-                if int(vizinho_prof[0][0]) > int(no_prof[0][0]):
-                    vizinhos_jusante.append(alimentador.nos_de_carga[vizinho_prof[0][1]])
+                # verifica quem é vizinho do nó desejado.
+                vizinho_prof = [viz_prof for viz_prof in
+                                rnp_alimentador.transpose()
+                                if viz_prof[1] == vizinho]
 
+                # verifica se a profundidade do vizinho é maior
+                if int(vizinho_prof[0][0]) > int(no_prof[0][0]):
+                    # armazena os vizinhos a jusante.
+                    vizinhos_jusante.append(
+                        alimentador.nos_de_carga[vizinho_prof[0][1]])
+
+            # verifica se não há vizinho a jusante,
+            # se não houverem o nó de carga analisado
+            # é o último do ramo.
             if vizinhos_jusante == []:
                 no.potencia_eq.real += no.potencia.real
                 no.potencia_eq.imag += no.potencia.imag
