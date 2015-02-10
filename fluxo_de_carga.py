@@ -133,12 +133,16 @@ def varrer_alimentador(alimentador):
                 no.potencia_eq.real += no.potencia.real
                 no.potencia_eq.imag += no.potencia.imag
             else:
+                # soma a potencia da carga associada ao nó atual
                 no.potencia_eq.real += no.potencia.real
                 no.potencia_eq.imag += no.potencia.imag
-                # soma a potência do nó à jusante com a potência do nó atual
+
+                # acrescenta à potência do nó atual
+                # as potências dos nós a jusante
                 for no_jus in vizinhos_jusante:
                     no.potencia_eq.real += no_jus.potencia_eq.real
                     no.potencia_eq.imag += no_jus.potencia_eq.imag
+
                     # chama a função busca_trecho para definir
                     # quais trechos estão entre o nó atual e o nó a jusante.
                     trecho = busca_trecho(alimentador, no.nome, no_jus.nome)
@@ -150,12 +154,14 @@ def varrer_alimentador(alimentador):
                         r1, x1 = trecho[0].calcula_impedancia()
                         r2, x2 = trecho[1].calcula_impedancia()
                         r, x = r1 + r2, x1 + x2
-                    # se o trecho atualfor uma instancia da classe trecho
+                    # se o trecho atual for uma instancia da classe trecho
                     else:
                         r, x = trecho.calcula_impedancia()
                         # calculo das potências dos nós de carga a jusante.
-                    no.potencia_eq.real += r * (no_jus.potencia_eq.mod ** 2) / no_jus.tensao.mod ** 2
-                    no.potencia_eq.imag += x * (no_jus.potencia_eq.mod ** 2) / no_jus.tensao.mod ** 2
+                    no.potencia_eq.real += r * (no_jus.potencia_eq.mod ** 2) / \
+                        no_jus.tensao.mod ** 2
+                    no.potencia_eq.imag += x * (no_jus.potencia_eq.mod ** 2) / \
+                        no_jus.tensao.mod ** 2
 
     prof = 0
     # seção do cálculo de atualização das tensões
@@ -167,11 +173,13 @@ def varrer_alimentador(alimentador):
         for no in nos:
             vizinhos = arvore_nos_de_carga[no.nome]
             # guarda os pares (profundidade,nó)
-            no_prof = [no_prof for no_prof in rnp_alimentador.transpose() if no_prof[1] == no.nome]
+            no_prof = [no_prof for no_prof in rnp_alimentador.transpose()
+                       if no_prof[1] == no.nome]
             vizinhos_montante = list()
             # verifica quem é vizinho do nó desejado.
             for vizinho in vizinhos:
-                vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose() if viz_prof[1] == vizinho]
+                vizinho_prof = [viz_prof for viz_prof in rnp_alimentador.transpose()
+                                if viz_prof[1] == vizinho]
                 if int(vizinho_prof[0][0]) < int(no_prof[0][0]):
                     # armazena os vizinhos a montante.
                     vizinhos_montante.append(alimentador.nos_de_carga[vizinho_prof[0][1]])
@@ -197,13 +205,14 @@ def varrer_alimentador(alimentador):
             p += r * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
             q += x * (no.potencia_eq.mod ** 2) / no.tensao.mod ** 2
 
-            v_jus = v_mon ** 2 - 2 * (r * p + x * q) + (r ** 2 + x ** 2) * (p ** 2 + q ** 2)/v_mon**2
+            v_jus = v_mon ** 2 - 2 * (r * p + x * q) + \
+                (r ** 2 + x ** 2) * (p ** 2 + q ** 2) / v_mon ** 2
             v_jus = np.sqrt(v_jus)
 
             k1 = (p * x - q * r) / v_mon
             k2 = v_mon - (p * r - q * x) / v_mon
 
-            ang = no_mon.tensao.ang * np.pi / 180.0 - np.arctan(k1 / 2)
+            ang = no_mon.tensao.ang * np.pi / 180.0 - np.arctan(k1 / k2)
 
             no.tensao.mod = v_jus
             no.tensao.ang = ang * 180.0 / np.pi
@@ -211,7 +220,7 @@ def varrer_alimentador(alimentador):
             # calcula o fluxo de corrente passante no trecho
             corrente = no.tensao.real - no_mon.tensao.real
             corrente += (no.tensao.imag - no_mon.tensao.imag) * 1.0j
-            corrente /= r + x * 1.0j
+            corrente /= (r + x * 1.0j)
             # se houver chaves, ou seja, há dois trechos a mesma corrente
             # é atribuida
             if not isinstance(trecho, Trecho):
