@@ -795,11 +795,11 @@ class Transformador(object):
 class Condutor(object):
     def __init__(self, nome, rp, xp, rz, xz, ampacidade):
         self.nome = nome
-        self.rp = rp
-        self.xp = xp
-        self.rz = rz
-        self.xz = xz
-        self.ampacidade = ampacidade
+        self.rp = float(rp)
+        self.xp = float(xp)
+        self.rz = float(rz)
+        self.xz = float(xz)
+        self.ampacidade = float(ampacidade)
 
 
 if __name__ == '__main__':
