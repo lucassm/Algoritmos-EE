@@ -324,6 +324,8 @@ class Subestacao(object):
                 no.tensao.mod = v_jus
                 no.tensao.ang = ang * 180.0 / np.pi
 
+                print 'Tensao do no {nome}: {tens}'.format(nome=no.nome, tens=no.tensao.mod/1e3)
+
                 # calcula o fluxo de corrente passante no trecho
                 corrente = no.tensao.real - no_mon.tensao.real
                 corrente += (no.tensao.imag - no_mon.tensao.imag) * 1.0j
@@ -345,15 +347,15 @@ class Subestacao(object):
 
     def calcular_fluxo_de_carga(self):
 
-        max_iteracaoes = 50
-        criterio_converg = 0.001
-        converg = 1e6
-        iter = 0
-
         f1 = Fasor(mod=13.8e3, ang=0.0, tipo=Fasor.Tensao)
         self._atribuir_tensao_a_subestacao(f1)
 
         for alimentador in self.alimentadores.values():
+            max_iteracaoes = 50
+            criterio_converg = 0.001
+            converg = 1e6
+            iter = 0
+
             print '============================'
             print 'Varredura no alimentador {al}'.format(al=alimentador.nome)
             converg_nos = dict()
@@ -412,8 +414,8 @@ class Trecho(Aresta):
             self.fluxo = fluxo
 
     def calcula_impedancia(self):
-        return (self.comprimento * self.condutor.rp,
-                self.comprimento * self.condutor.xp)
+        return (self.comprimento * self.condutor.rp / 1e3,
+                self.comprimento * self.condutor.xp / 1e3)
 
     def __repr__(self):
         return 'Trecho: %s' % self.nome
