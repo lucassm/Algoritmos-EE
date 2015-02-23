@@ -6,14 +6,19 @@ from util import Fasor
 
 
 class Setor(Arvore):
-    def __init__(self, nome, vizinhos, nos_de_carga):
+    Prioridade_Baixa, Prioridade_Media, Prioridade_Alta = range(3)
+
+    def __init__(self, nome, vizinhos, nos_de_carga, prioridade=None):
         assert isinstance(nome, str), 'O parâmetro nome da classe' \
                                       'Setor deve ser do tipo string'
         assert isinstance(vizinhos, list), 'O parâmetro vizinhos da classe' \
                                            ' Setor deve ser do tipo list'
         assert isinstance(nos_de_carga, list), 'O parâmetro nos_de_carga da classe' \
                                                'Setor deve ser do tipo list'
+        #assert isinstance(prioridade, int), 'O parâmetro Prioridade da classe' \
+        #                                    'Setor deve ser do tipo int'
         self.nome = nome
+        self.prioridade = prioridade
         self.vizinhos = vizinhos
 
         self.rnp_associadas = {i: None for i in self.vizinhos}
@@ -149,6 +154,7 @@ class Subestacao(object):
     def _atribuir_tensao_a_subestacao(self, tensao):
         """ Função que atribui tensão à subestação
          e a define para todos os nós de carga"""
+        self.tensao = tensao
         for alimentador in self.alimentadores.values():
             for no in alimentador.nos_de_carga.values():
                 no.tensao = Fasor(real=tensao.real,
