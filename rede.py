@@ -2,7 +2,7 @@
 import numpy as np
 from random import randint
 from rnp import Arvore, Aresta
-from util import Fasor
+from util import Fasor, Base
 
 
 class Setor(Arvore):
@@ -92,7 +92,7 @@ class NoDeCarga(object):
 
 
 class Subestacao(object):
-    def __init__(self, nome, alimentadores, transformadores):
+    def __init__(self, nome, alimentadores, transformadores, impedancia_positiva=0, impedancia_zero=0):
         assert isinstance(nome, str), 'O parâmetro nome da classe Subestacao ' \
                                       'deve ser do tipo str'
         assert isinstance(alimentadores, list), 'O parâmetro alimentadores da classe ' \
@@ -109,6 +109,111 @@ class Subestacao(object):
         self.transformadores = dict()
         for transformador in transformadores:
             self.transformadores[transformador.nome] = transformador
+
+        for transformador in transformadores:
+            self.base_sub = Base(transformador.tensao_secundario.mod, transformador.potencia.mod)
+            break
+
+        for alimentador in alimentadores:
+            for trecho in alimentador.trechos.values():
+                trecho.base = self.base_sub
+                trecho.base = self.base_sub
+                trecho.impedancia_equivalente_positiva = trecho.impedancia_positiva/trecho.base.impedancia
+                trecho.impedancia_equivalente_zero = trecho.impedancia_zero / trecho.base.impedancia
+
+        self.impedancia_positiva = impedancia_positiva
+        self.impedancia_zero = impedancia_zero
+        self.impedancia_equivalente_positiva = impedancia_positiva
+        self.impedancia_equivalente_zero = impedancia_zero
+
+    ############################
+    # CALCULOS DE CURTO-CIRCUITO
+    ############################
+
+    def calculacurto(self, tipo):
+
+        if tipo == 'trifasico':
+            self.curto_trifasico = dict()
+            for alimentador_atual, r in self.alimentadores.iteritems():
+                for i in self.alimentadores[alimentador_atual].trechos.values():
+                    self.curto_trifasico[i] = i.calcula_curto_trifasico()
+
+            '''for i,j in sub_1.curto_trifasico.iteritems():
+                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+
+        elif tipo == 'monofasico':
+            self.curto_monofasico = dict()
+            for alimentador_atual, r in self.alimentadores.iteritems():
+                for i in self.alimentadores[alimentador_atual].trechos.values():
+                    self.curto_monofasico[i] = i.calcula_curto_monofasico()
+
+            '''for i,j in sub_1.curto_monofasico.iteritems():
+                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+
+        elif tipo == 'bifasico':
+            self.curto_bifasico = dict()
+            for alimentador_atual, r in self.alimentadores.iteritems():
+                for i in self.alimentadores[alimentador_atual].trechos.values():
+                    self.curto_bifasico[i] = i.calcula_curto_bifasico()
+
+            '''for i,j in sub_1.curto_bifasico.iteritems():
+                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+
+        elif tipo == 'monofasico_minimo':
+            self.curto_monfasico_minimo = dict()
+            for alimentador_atual, r in self.alimentadores.iteritems():
+                for i in self.alimentadores[alimentador_atual].trechos.values():
+                    self.curto_monfasico_minimo[i] = i.calcula_curto_monofasico_minimo()
+
+            '''for i,j in sub_1.curto_monfasico_minimo.iteritems():
+                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+
+    def calculaimpedanciaeq(self):
+
+        trechosvisitados = []  # guarda os trechos em que já foram calculados a impedância equivalente
+
+        for alimentador_atual, r in self.alimentadores.iteritems():  # procura o nó inicial(raiz) do alimentador
+            for i in self.alimentadores[alimentador_atual].trechos.values():
+                for j in self.alimentadores[alimentador_atual].setores[r.arvore_nos_de_carga.raiz].nos_de_carga.keys():
+                    prox_no = self.alimentadores[alimentador_atual].setores[r.arvore_nos_de_carga.raiz].nos_de_carga[j]  # nó a partir do qual será procurado trechos conectados a ele
+                    trechoatual = self  # último trecho que foi calculado a impedância equivalente
+                    break
+                break
+            break
+
+        self._calculaimpedanciaeq(trechoatual, prox_no, alimentador_atual, trechosvisitados)
+
+    def _calculaimpedanciaeq(self, trecho_anterior, no_atual, alimentador_atual, trechosvisitados):
+        for i in self.alimentadores[alimentador_atual].trechos.values():
+            if i not in trechosvisitados and (i.n1 or i.n2) == no_atual:  # procura trechos conectados ao no_atual (prox_no da execução anterior)
+                if type(no_atual) == Chave:  # verifica se a ligação é feita por meio de chave, verificando-se o estado da chave
+                    if no_atual.estado == 0:
+                        continue
+                    else:
+                        pass
+                else:
+                    pass
+
+                # calcula impedância equivalente do trecho
+                i.impedancia_equivalente_positiva = i.impedancia_equivalente_positiva + trecho_anterior.impedancia_equivalente_positiva
+                i.impedancia_equivalente_zero = i.impedancia_equivalente_zero + trecho_anterior.impedancia_equivalente_zero
+                trechosvisitados.append(i)
+                trecho_atual = i
+
+                # procura o pro_no para calcular as proximas impedancias equivalentes
+                if no_atual == i.n1:
+                    prox_no = i.n2
+                else:
+                    prox_no = i.n1
+
+                self._calculaimpedanciaeq(trecho_atual, prox_no, alimentador_atual,trechosvisitados)
+            else:
+                pass
+        return
+
+    ###########################
+    # CALCULO DE FLUXO DE CARGA
+    ###########################
 
     def _busca_trecho(self, alimentador, n1, n2):
         """Função que busca trechos em um alimendador entre os nós/chaves
@@ -396,7 +501,8 @@ class Trecho(Aresta):
                  n2,
                  fluxo=None,
                  condutor=None,
-                 comprimento=None):
+                 comprimento=None,
+                 resistenciacontato=100):
         assert isinstance(nome, str), 'O parâmetro nome da classe Trecho ' \
                                       'deve ser do tipo str'
         assert isinstance(n1, NoDeCarga) or isinstance(n1, Chave), 'O parâmetro n1 da classe Trecho ' \
@@ -413,6 +519,9 @@ class Trecho(Aresta):
         self.no_jusante = None
         self.condutor = condutor
         self.comprimento = comprimento
+        self.impedancia_positiva = (self.condutor.rp + self.condutor.xp * 1j) * self.comprimento
+        self.impedancia_zero = (self.condutor.rz + self.condutor.xz * 1j) * self.comprimento
+        self.resistencia_contato = resistenciacontato
 
         if fluxo is None:
             self.fluxo = Fasor(real=0.0, imag=0.0, tipo=Fasor.Corrente)
@@ -422,6 +531,30 @@ class Trecho(Aresta):
     def calcula_impedancia(self):
         return (self.comprimento * self.condutor.rp / 1e3,
                 self.comprimento * self.condutor.xp / 1e3)
+
+    def calcula_curto_monofasico(self):
+        curto1 = (3.0) * self.base.corrente / (2 * self.impedancia_equivalente_positiva + self.impedancia_equivalente_zero)
+        correntecc = Fasor(real=curto1.real, imag=curto1.imag, tipo=Fasor.Corrente)
+        correntecc.base = self.base
+        return correntecc
+
+    def calcula_curto_bifasico(self):
+        curto2 = (3 ** 0.5) * self.base.corrente / (2 * self.impedancia_equivalente_positiva)
+        correntecc = Fasor(real=curto2.real, imag=curto2.imag, tipo=Fasor.Corrente)
+        correntecc.base = self.base
+        return correntecc
+
+    def calcula_curto_trifasico(self):
+        curto3 = 1.0 * self.base.corrente / (self.impedancia_equivalente_positiva)
+        correntecc = Fasor(real=curto3.real, imag=curto3.imag, tipo=Fasor.Corrente)
+        correntecc.base = self.base
+        return correntecc
+
+    def calcula_curto_monofasico_minimo(self):
+        curto1m = 3.0 * self.base.corrente / (2 * self.impedancia_equivalente_positiva + self.impedancia_equivalente_zero+3*self.resistencia_contato/self.base.impedancia)
+        correntecc = Fasor(real=curto1m.real, imag=curto1m.imag, tipo=Fasor.Corrente)
+        correntecc.base = self.base
+        return correntecc
 
     def __repr__(self):
         return 'Trecho: %s' % self.nome
@@ -1069,6 +1202,24 @@ if __name__ == '__main__':
 
     sub_1_al_1.gerar_arvore_nos_de_carga()
     sub_2_al_1.gerar_arvore_nos_de_carga()
+
+    sub_1.calculaimpedanciaeq()
+
+    sub_1.calculacurto('monofasico')
+    for i, j in sub_1.curto_monofasico.iteritems():
+        print i, 'Curto monofasico:', j.pu, ' pu - ', j.mod, ' A'
+
+    sub_1.calculacurto('trifasico')
+    for i, j in sub_1.curto_trifasico.iteritems():
+        print i, 'Curto trifasico:', j.pu, ' pu - ', j.mod, ' A'
+
+    sub_1.calculacurto('bifasico')
+    for i, j in sub_1.curto_bifasico.iteritems():
+        print i, 'Curto bifasico:', j.pu, ' pu - ', j.mod, ' A'
+
+    sub_1.calculacurto('monofasico_minimo')
+    for i,j in sub_1.curto_monfasico_minimo.iteritems():
+        print i, 'Curto minimo:', j.pu, ' pu - ', j.mod,' A'
 
     # Imprime a representação de todos os setores da subestção
     # na representação
