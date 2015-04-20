@@ -38,3 +38,5 @@ arvore_2.ordenar(raiz=2)
 
 arvore_3 = Arvore(nos_arvore_3)
 arvore_3.ordenar(raiz=3)
+
+arvore_1.caminho_no_para_no(12, 23)

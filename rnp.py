@@ -320,7 +320,20 @@ class Arvore(object):
                     if prox[1][0] == n2:
                         break
             else:
-                raise AttributeError('Os nós n1 e n2 não pertencem ao mesmo ramo!')
+                # raise AttributeError('Os nós n1 e n2
+                # não pertencem ao mesmo ramo!')
+                a1 = self.caminho_no_para_raiz(n2, sentido=1)
+                a2 = self.caminho_no_para_raiz(n1, sentido=0)
+
+                no_comum = max([i for i in a2[1, :] if i in a1[1, :]])
+                indice_no_comum = where(a1[1, :] == no_comum)[0][0]
+
+                a1 = a1[:, :indice_no_comum + 1]
+
+                indice_no_comum = where(a2[1, :] == no_comum)[0][0]
+                a2 = a2[:, indice_no_comum + 1:]
+
+                return concatenate((a1, a2), axis=1)
 
         if sentido == 1:
             return caminho
