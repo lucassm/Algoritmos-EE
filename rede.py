@@ -6,15 +6,17 @@ from util import Fasor, Base
 
 
 class Setor(Arvore):
-    Prioridade_Baixa, Prioridade_Media, Prioridade_Alta = range(3)
 
-    def __init__(self, nome, vizinhos, nos_de_carga, prioridade=None):
+    def __init__(self, nome, vizinhos, nos_de_carga, prioridade=0):
         assert isinstance(nome, str), 'O parâmetro nome da classe' \
                                       'Setor deve ser do tipo string'
         assert isinstance(vizinhos, list), 'O parâmetro vizinhos da classe' \
                                            ' Setor deve ser do tipo list'
         assert isinstance(nos_de_carga, list), 'O parâmetro nos_de_carga da classe' \
                                                'Setor deve ser do tipo list'
+        assert (prioridade >= 0 and prioridade <= 10), 'O valo de prioridade'\
+                                                       'deve estar entre 0-10'
+
         #assert isinstance(prioridade, int), 'O parâmetro Prioridade da classe' \
         #                                    'Setor deve ser do tipo int'
         self.nome = nome
