@@ -1,4 +1,5 @@
 # coding=utf-8
+from terminaltables import AsciiTable
 import numpy as np
 from random import randint
 from rnp import Arvore, Aresta
@@ -133,40 +134,40 @@ class Subestacao(object):
     def calculacurto(self, tipo):
 
         if tipo == 'trifasico':
-            self.curto_trifasico = dict()
+            self.curto_trifasico = [['Trecho 3fasico', 'Curto pu', 'Curto A']]
             for alimentador_atual, r in self.alimentadores.iteritems():
                 for i in self.alimentadores[alimentador_atual].trechos.values():
-                    self.curto_trifasico[i] = i.calcula_curto_trifasico()
-
-            '''for i,j in sub_1.curto_trifasico.iteritems():
-                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+                    curto = i.calcula_curto_trifasico()
+                    self.curto_trifasico.append([i.nome,str(curto.pu),str(curto.mod)])
+            table = AsciiTable(self.curto_trifasico)
+            print table.table
 
         elif tipo == 'monofasico':
-            self.curto_monofasico = dict()
+            self.curto_monofasico = [['Trecho 1fasico', 'Curto pu', 'Curto A']]
             for alimentador_atual, r in self.alimentadores.iteritems():
                 for i in self.alimentadores[alimentador_atual].trechos.values():
-                    self.curto_monofasico[i] = i.calcula_curto_monofasico()
-
-            '''for i,j in sub_1.curto_monofasico.iteritems():
-                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+                    curto = i.calcula_curto_monofasico()
+                    self.curto_monofasico.append([i.nome,str(curto.pu),str(curto.mod)])
+            table = AsciiTable(self.curto_monofasico)
+            print table.table
 
         elif tipo == 'bifasico':
-            self.curto_bifasico = dict()
+            self.curto_bifasico = [['Trecho 2fasico', 'Curto pu', 'Curto A']]
             for alimentador_atual, r in self.alimentadores.iteritems():
                 for i in self.alimentadores[alimentador_atual].trechos.values():
-                    self.curto_bifasico[i] = i.calcula_curto_bifasico()
-
-            '''for i,j in sub_1.curto_bifasico.iteritems():
-                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+                    curto = i.calcula_curto_bifasico()
+                    self.curto_bifasico.append([i.nome,str(curto.pu),str(curto.mod)])
+            table = AsciiTable(self.curto_bifasico)
+            print table.table
 
         elif tipo == 'monofasico_minimo':
-            self.curto_monfasico_minimo = dict()
+            self.curto_monofasico_minimo = [['Trecho 1fasico min', 'Curto pu', 'Curto A']]
             for alimentador_atual, r in self.alimentadores.iteritems():
                 for i in self.alimentadores[alimentador_atual].trechos.values():
-                    self.curto_monfasico_minimo[i] = i.calcula_curto_monofasico_minimo()
-
-            '''for i,j in sub_1.curto_monfasico_minimo.iteritems():
-                 print i,'Curto:',j.pu,' pu - ',j.mod,' A' '''
+                    curto = i.calcula_curto_monofasico_minimo()
+                    self.curto_monofasico_minimo.append([i.nome,str(curto.pu),str(curto.mod)])
+            table = AsciiTable(self.curto_monofasico_minimo)
+            print table.table
 
     def calculaimpedanciaeq(self):
 
@@ -1206,20 +1207,12 @@ if __name__ == '__main__':
     sub_1.calculaimpedanciaeq()
 
     sub_1.calculacurto('monofasico')
-    for i, j in sub_1.curto_monofasico.iteritems():
-        print i, 'Curto monofasico:', j.pu, ' pu - ', j.mod, ' A'
 
     sub_1.calculacurto('trifasico')
-    for i, j in sub_1.curto_trifasico.iteritems():
-        print i, 'Curto trifasico:', j.pu, ' pu - ', j.mod, ' A'
 
     sub_1.calculacurto('bifasico')
-    for i, j in sub_1.curto_bifasico.iteritems():
-        print i, 'Curto bifasico:', j.pu, ' pu - ', j.mod, ' A'
 
     sub_1.calculacurto('monofasico_minimo')
-    for i,j in sub_1.curto_monfasico_minimo.iteritems():
-        print i, 'Curto minimo:', j.pu, ' pu - ', j.mod,' A'
 
     # Imprime a representação de todos os setores da subestção
     # na representação
