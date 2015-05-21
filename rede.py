@@ -437,7 +437,7 @@ class Subestacao(object):
                 no.tensao.mod = v_jus
                 no.tensao.ang = ang * 180.0 / np.pi
 
-                print 'Tensao do no {nome}: {tens}'.format(nome=no.nome, tens=no.tensao.mod/1e3)
+                print 'Tensao do no {nome}: {tens}'.format(nome=no.nome, tens=no.tensao.mod*np.sqrt(3)/1e3)
 
                 # calcula o fluxo de corrente passante no trecho
                 corrente = no.tensao.real - no_mon.tensao.real
@@ -460,6 +460,8 @@ class Subestacao(object):
 
     def calcular_fluxo_de_carga(self):
 
+        # atribui a tensão de fase da barra da subestação a todos
+        # os nós de carga da subestação
         f1 = Fasor(mod=13.8e3 / np.sqrt(3), ang=0.0, tipo=Fasor.Tensao)
         self._atribuir_tensao_a_subestacao(f1)
 
@@ -494,6 +496,14 @@ class Subestacao(object):
 
                 converg = max(converg_nos.values())
                 print 'Max. diferença de tensões: {conv}'.format(conv=converg)
+
+        # for atualiza os valores das tensões dos nós de carga para valores
+        # de tensão de linha
+        for alimentador in self.alimentadores.values():
+            for no in alimentador.nos_de_carga.values():
+                no.tensao = Fasor(mod=no.tensao.mod * np.sqrt(3),
+                                  ang=no.tensao.ang,
+                                  tipo=Fasor.Tensao)
 
 
 class Trecho(Aresta):
