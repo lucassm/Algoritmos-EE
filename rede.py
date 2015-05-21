@@ -344,12 +344,12 @@ class Subestacao(object):
                 # se não houverem o nó de carga analisado
                 # é o último do ramo.
                 if vizinhos_jusante == []:
-                    no.potencia_eq.real += no.potencia.real
-                    no.potencia_eq.imag += no.potencia.imag
+                    no.potencia_eq.real += no.potencia.real / 3.0
+                    no.potencia_eq.imag += no.potencia.imag / 3.0
                 else:
                     # soma a potencia da carga associada ao nó atual
-                    no.potencia_eq.real += no.potencia.real
-                    no.potencia_eq.imag += no.potencia.imag
+                    no.potencia_eq.real += no.potencia.real / 3.0
+                    no.potencia_eq.imag += no.potencia.imag / 3.0
 
                     # acrescenta à potência do nó atual
                     # as potências dos nós a jusante
@@ -460,7 +460,7 @@ class Subestacao(object):
 
     def calcular_fluxo_de_carga(self):
 
-        f1 = Fasor(mod=13.8e3, ang=0.0, tipo=Fasor.Tensao)
+        f1 = Fasor(mod=13.8e3 / np.sqrt(3), ang=0.0, tipo=Fasor.Tensao)
         self._atribuir_tensao_a_subestacao(f1)
 
         for alimentador in self.alimentadores.values():
