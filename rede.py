@@ -499,11 +499,13 @@ class Subestacao(object):
 
         # for atualiza os valores das tensões dos nós de carga para valores
         # de tensão de linha
+        self.tensao.mod = self.tensao.mod * np.sqrt(3)
+        nos = list()
         for alimentador in self.alimentadores.values():
             for no in alimentador.nos_de_carga.values():
-                no.tensao = Fasor(mod=no.tensao.mod * np.sqrt(3),
-                                  ang=no.tensao.ang,
-                                  tipo=Fasor.Tensao)
+                if no.nome not in nos:
+                    no.tensao.mod = no.tensao.mod * np.sqrt(3)
+                    nos.append(no.nome)
 
 
 class Trecho(Aresta):
