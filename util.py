@@ -175,7 +175,7 @@ class Base(object):
         self.tensao = tensao
         self.potencia = potencia
         self.corrente = self.potencia / (np.sqrt(3) * self.tensao)
-        self.impedancia = self.tensao / self.corrente
+        self.impedancia = self.tensao ** 2 / self.potencia
 
     def __str__(self):
         return 'Base de {tensao} V e potencia {} VA'.format(tensao=self.tensao, potencia=self.potencia)
