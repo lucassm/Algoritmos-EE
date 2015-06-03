@@ -325,7 +325,14 @@ class Arvore(object):
                 a1 = self.caminho_no_para_raiz(n2, sentido=1)
                 a2 = self.caminho_no_para_raiz(n1, sentido=0)
 
-                no_comum = max([i for i in a2[1, :] if i in a1[1, :]])
+                list_nos_comuns = [i for i in a2[1, :] if i in a1[1, :]]
+                prof_no_comum = 0
+                for no in a1.transpose():
+                    if no[1] in list_nos_comuns:
+                        if no[0] > prof_no_comum:
+                            prof_no_comum = no[0]
+                            no_comum = no[1]
+
                 indice_no_comum = where(a1[1, :] == no_comum)[0][0]
 
                 a1 = a1[:, :indice_no_comum + 1]
