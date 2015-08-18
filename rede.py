@@ -544,8 +544,8 @@ class Trecho(Aresta):
             self.fluxo = fluxo
 
     def calcula_impedancia(self):
-        return (self.comprimento * self.condutor.rp / 1e3,
-                self.comprimento * self.condutor.xp / 1e3)
+        return (self.comprimento * self.condutor.rp,
+                self.comprimento * self.condutor.xp)
 
     def calcula_curto_monofasico(self):
         curto1 = (3.0) * self.base.corrente / (2 * self.impedancia_equivalente_positiva + self.impedancia_equivalente_zero)
